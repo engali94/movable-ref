@@ -1,6 +1,6 @@
 use std::ptr::NonNull;
 
-/// A nullable pointer, using NonNull<T>
+/// A nullable pointer, using `NonNull<T>`
 pub type Ptr<T> = Option<NonNull<T>>;
 
 /// Trait for types that can represent pointer differences.

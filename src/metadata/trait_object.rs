@@ -18,7 +18,7 @@ use std::ptr::{self, NonNull, Pointee};
 /// ```rust
 /// # #![feature(ptr_metadata)]
 /// # fn main() {
-/// use tether::{SelfRef, TraitObject};
+/// use movable_ref::{SelfRef, TraitObject};
 /// use std::any::Any;
 ///
 /// struct Container {
@@ -76,7 +76,7 @@ impl<T: ?Sized + Pointee<Metadata = ptr::DynMetadata<T>>> TraitObject<T> {
     ///
     /// ```rust
     /// # #![feature(ptr_metadata)]
-    /// use tether::TraitObject;
+    /// use movable_ref::TraitObject;
     /// use std::fmt::Debug;
     ///
     /// let value = 42i32;
@@ -101,7 +101,7 @@ impl<T: ?Sized + Pointee<Metadata = ptr::DynMetadata<T>>> TraitObject<T> {
     ///
     /// ```rust
     /// # #![feature(ptr_metadata)]
-    /// use tether::TraitObject;
+    /// use movable_ref::TraitObject;
     /// use std::fmt::Debug;
     ///
     /// let mut value = vec![1, 2, 3];
@@ -121,7 +121,7 @@ impl<T: ?Sized + Pointee<Metadata = ptr::DynMetadata<T>>> TraitObject<T> {
     ///
     /// ```rust
     /// # #![feature(ptr_metadata)]
-    /// # use tether::{SelfRef, TraitObject};
+    /// # use movable_ref::{SelfRef, TraitObject};
     /// # use std::any::Any;
     /// # let mut data = vec![1u8, 2, 3];
     /// # let mut self_ref: SelfRef<TraitObject<dyn Any>, i16> = SelfRef::null();

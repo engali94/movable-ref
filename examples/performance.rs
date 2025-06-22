@@ -1,8 +1,8 @@
 #![allow(clippy::uninlined_format_args)]
 
+use movable_ref::SelfRef;
 use std::hint::black_box;
 use std::time::Instant;
-use tether::SelfRef;
 
 struct SelfRefRelPtr {
     data: [u64; 100],

@@ -12,7 +12,7 @@ use crate::offset::Ptr;
 /// create a `SelfRef<[u8]>` or `SelfRef<TraitObject<dyn Debug>>`.
 ///
 /// ```rust
-/// use tether::SelfRef;
+/// use movable_ref::SelfRef;
 ///
 /// // Works with sized types (metadata = ())
 /// let mut value = 42i32;

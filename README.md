@@ -1,12 +1,12 @@
-# tether
+# movable-ref
 
-[![Crates.io](https://img.shields.io/crates/v/tether.svg)](https://crates.io/crates/tether)
-[![Documentation](https://docs.rs/tether/badge.svg)](https://docs.rs/tether)
-[![CI](https://github.com/engali94/tether/workflows/CI/badge.svg)](https://github.com/engali94/tether/actions)
-[![Ubuntu](https://img.shields.io/github/actions/workflow/status/engali94/tether/ci.yml?branch=main&label=Ubuntu&logo=ubuntu)](https://github.com/engali94/tether/actions)
-[![macOS](https://img.shields.io/github/actions/workflow/status/engali94/tether/ci.yml?branch=main&label=macOS&logo=apple)](https://github.com/engali94/tether/actions)
-[![Windows](https://img.shields.io/github/actions/workflow/status/engali94/tether/ci.yml?branch=main&label=Windows&logo=windows)](https://github.com/engali94/tether/actions)
-[![MSRV](https://img.shields.io/badge/MSRV-1.70+-blue.svg)](https://github.com/engali94/tether/actions)
+[![Crates.io](https://img.shields.io/crates/v/movable-ref.svg)](https://crates.io/crates/movable-ref)
+[![Documentation](https://docs.rs/movable-ref/badge.svg)](https://docs.rs/movable-ref)
+[![CI](https://github.com/engali94/movable-ref/workflows/CI/badge.svg)](https://github.com/engali94/movable-ref/actions)
+[![Ubuntu](https://img.shields.io/github/actions/workflow/status/engali94/movable-ref/ci.yml?branch=main&label=Ubuntu&logo=ubuntu)](https://github.com/engali94/movable-ref/actions)
+[![macOS](https://img.shields.io/github/actions/workflow/status/engali94/movable-ref/ci.yml?branch=main&label=macOS&logo=apple)](https://github.com/engali94/movable-ref/actions)
+[![Windows](https://img.shields.io/github/actions/workflow/status/engali94/movable-ref/ci.yml?branch=main&label=Windows&logo=windows)](https://github.com/engali94/movable-ref/actions)
+[![MSRV](https://img.shields.io/badge/MSRV-1.70+-blue.svg)](https://github.com/engali94/movable-ref/actions)
 
 A Rust library for **offset based pointers** that enable movable self-referential data structures.
 
@@ -33,7 +33,7 @@ Existing solutions have many limitations:
 Offset pointers store **offsets** instead of absolute addresses, enabling self-referential structures that remain valid when moved:
 
 ```rust
-use tether::SelfRef;
+use movable_ref::SelfRef;
 
 struct Node {
     value: String,
@@ -81,13 +81,13 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tether = "0.1.0"
+movable-ref = "0.1.0"
 ```
 
 ## Basic Usage
 
 ```rust
-use tether::SelfRef;
+use movable_ref::SelfRef;
 
 // 1. Create structure with null pointer
 let mut data = MyStruct {
@@ -109,7 +109,7 @@ let reference: &str = unsafe { data.ptr.as_ref_unchecked() };
 
 ```toml
 [dependencies]
-tether = { version = "0.1.0", features = ["no_std"] }
+movable-ref = { version = "0.1.0", features = ["no_std"] }
 ```
 ## Performance Benchmarks
 

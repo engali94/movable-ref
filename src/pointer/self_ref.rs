@@ -27,7 +27,7 @@ fn nn_to_ptr<T: ?Sized>(nn: Ptr<T>) -> *mut T {
 /// range, `i16` for 2-byte pointers with ±32KB range, or larger types for bigger structures.
 ///
 /// ```rust
-/// use tether::SelfRef;
+/// use movable_ref::SelfRef;
 ///
 /// struct Node {
 ///     value: String,
@@ -117,7 +117,7 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     /// the offset fits before storing it.
     ///
     /// ```rust
-    /// use tether::SelfRef;
+    /// use movable_ref::SelfRef;
     /// let mut data = "hello".to_string();
     /// let mut ptr: SelfRef<String, i16> = SelfRef::null();
     /// ptr.set(&mut data).unwrap();  // Now points to data

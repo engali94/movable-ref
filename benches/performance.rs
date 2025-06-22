@@ -1,9 +1,9 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use movable_ref::SelfRef;
 use std::cell::RefCell;
 use std::hint::black_box;
 use std::pin::Pin;
 use std::rc::Rc;
-use tether::SelfRef;
 
 // ============================================================================
 // Test Data Structures (Small, Fast)

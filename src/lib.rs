@@ -59,7 +59,7 @@ Note: Unsized types require additional considerations.
 
 ```rust
 # fn main() {
-# use tether::SelfRef;
+# use movable_ref::SelfRef;
 struct SelfRefStruct {
     value: (String, u32),
     ptr: SelfRef<String, i8>

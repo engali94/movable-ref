@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 
-use tether::SelfRef;
+use movable_ref::SelfRef;
 
 struct Node {
     value: String,
