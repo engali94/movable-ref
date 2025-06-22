@@ -53,5 +53,11 @@ pub unsafe trait PointerRecomposition {
     /// This is where the magic happens - takes a basic data pointer and the stored
     /// metadata, then builds back the original fat pointer. For slices, this means
     /// combining the data pointer with the length. For trait objects, it's data + vtable.
+    ///
+    /// # Safety
+    ///
+    /// The `ptr` must be a valid pointer to the start of the data, and `data` must be
+    /// valid metadata that was previously extracted from a valid pointer of type `Self`.
+    /// The resulting pointer will only be valid if both components are correct.
     unsafe fn recompose(ptr: Ptr<u8>, data: Self::Components) -> Ptr<Self>;
 }

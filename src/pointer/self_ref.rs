@@ -141,7 +141,7 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     /// `value` must not be null.
     #[inline]
     pub unsafe fn set_unchecked(&mut self, value: *mut T) {
-        self.0 = I::sub_unchecked(value as *mut T as _, self as *mut Self as _);
+        self.0 = I::sub_unchecked(value as _, self as *mut Self as _);
         self.1 = MaybeUninit::new(T::decompose(&*value));
     }
 

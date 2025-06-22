@@ -15,8 +15,8 @@ macro_rules! impl_delta_zeroable {
                 };
 
                 if std::mem::size_of::<Self>() < std::mem::size_of::<isize>() && (
-                    (Self::min_value() as isize) > del ||
-                    (Self::max_value() as isize) < del
+                    (Self::MIN as isize) > del ||
+                    (Self::MAX as isize) < del
                 )
                 {
                     Err(IntegerOffsetError(IntegerOffsetErrorImpl::Conversion(del)))
@@ -55,8 +55,8 @@ macro_rules! impl_delta_nonzero {
                 };
 
                 if std::mem::size_of::<Self>() < std::mem::size_of::<isize>() && (
-                    ($base::min_value() as isize) > del ||
-                    ($base::max_value() as isize) < del
+                    ($base::MIN as isize) > del ||
+                    ($base::MAX as isize) < del
                 )
                 {
                     Err(IntegerOffsetError(IntegerOffsetErrorImpl::Conversion(del)))
