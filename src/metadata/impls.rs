@@ -1,8 +1,6 @@
 use super::traits::PointerRecomposition;
 use crate::offset::Ptr;
 use std::ptr::NonNull;
-use std::string::String;
-use std::vec::Vec;
 
 unsafe impl<T: ?Sized> PointerRecomposition for &T {
     type Components = ();
