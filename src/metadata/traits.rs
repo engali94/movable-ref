@@ -16,12 +16,12 @@ use crate::offset::Ptr;
 ///
 /// // Works with sized types (metadata = ())
 /// let mut value = 42i32;
-/// let mut ptr: SelfRef<i32, i16> = SelfRef::null();
+/// let mut ptr: SelfRef<i32> = SelfRef::null();
 /// ptr.set(&mut value).unwrap();
 ///
 /// // Also works with slices (metadata = length)
 /// let mut data = vec![1, 2, 3, 4, 5];
-/// let mut slice_ptr: SelfRef<[i32], i16> = SelfRef::null();
+/// let mut slice_ptr: SelfRef<[i32]> = SelfRef::null();
 /// slice_ptr.set(&mut data[1..4]).unwrap();  // Points to middle section
 /// ```
 ///

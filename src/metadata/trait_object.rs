@@ -1,6 +1,4 @@
-#![cfg(feature = "nightly")]
-
-use super::traits::MetaData;
+use super::traits::PointerRecomposition;
 use crate::offset::Ptr;
 use std::mem;
 use std::ptr::{self, NonNull, Pointee};
@@ -145,16 +143,16 @@ impl<T: ?Sized + Pointee<Metadata = ptr::DynMetadata<T>>> TraitObject<T> {
     }
 }
 
-unsafe impl<T: ?Sized + Pointee<Metadata = ptr::DynMetadata<T>>> MetaData for TraitObject<T> {
-    type Data = ptr::DynMetadata<T>;
+unsafe impl<T: ?Sized + Pointee<Metadata = ptr::DynMetadata<T>>> PointerRecomposition for TraitObject<T> {
+    type Components = ptr::DynMetadata<T>;
 
     #[inline]
-    fn data(this: &Self) -> Self::Data {
+    fn decompose(this: &Self) -> Self::Components {
         ptr::metadata(this.as_ref() as *const T)
     }
 
     #[inline]
-    unsafe fn compose(ptr: Ptr<u8>, metadata: Self::Data) -> Ptr<Self> {
+    unsafe fn recompose(ptr: Ptr<u8>, metadata: Self::Components) -> Ptr<Self> {
         let data_ptr = ptr?.as_ptr();
         let trait_obj_ptr = ptr::from_raw_parts(data_ptr as *const (), metadata) as *const T;
         let self_ptr = mem::transmute::<*const T, *const Self>(trait_obj_ptr);

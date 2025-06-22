@@ -117,6 +117,7 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     /// the offset fits before storing it.
     ///
     /// ```rust
+    /// use tether::SelfRef;
     /// let mut data = "hello".to_string();
     /// let mut ptr: SelfRef<String, i16> = SelfRef::null();
     /// ptr.set(&mut data).unwrap();  // Now points to data
