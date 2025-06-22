@@ -1,8 +1,6 @@
+//! Error types
 
-/**
- * If an integer's range is too small to store an offset, then
- * this error is generated
- */
+/// An error type for when an integer offset cannot be stored
 #[derive(Debug)]
 pub struct IntegerOffsetError(pub(crate) IntegerOffsetErrorImpl);
 
