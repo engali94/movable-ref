@@ -33,9 +33,10 @@ fn main() {
     let boxed_node = Box::new(node);
     println!("In Box: {}", boxed_node.get_value());
 
-    let mut nodes = Vec::new();
-    nodes.push(*boxed_node);
-    nodes.push(Node::new("Another node".to_string()));
+    let nodes = [
+        *boxed_node,
+        Node::new("Another node".to_string())
+    ];
 
     for (i, node) in nodes.iter().enumerate() {
         println!("Node {}: '{}' (len: {})", i, node.get_value(), node.len());

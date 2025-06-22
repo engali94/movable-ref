@@ -127,9 +127,10 @@ fn demonstrate_movability() {
     let moved_again = *boxed;
     println!("  After unbox:    {}", moved_again.get_value());
 
-    let mut vec = Vec::new();
-    vec.push(moved_again);
-    vec.push(SelfRefRelPtr::new());
+    let vec = [
+        moved_again,
+        SelfRefRelPtr::new()
+    ];
     println!("  In vector[0]:   {}", vec[0].get_value());
     println!("  In vector[1]:   {}", vec[1].get_value());
 

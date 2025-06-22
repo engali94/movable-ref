@@ -30,6 +30,7 @@ impl SelfRefStruct {
 }
 
 struct PinnedStruct {
+    #[allow(dead_code)]
     data: [u64; 100],
     ptr: *const u64,
 }

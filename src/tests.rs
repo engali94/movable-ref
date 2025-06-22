@@ -12,7 +12,7 @@ fn id<T>(t: &mut T) -> &mut T {
 impl<T, U: ?Sized + PointerRecomposition> SelfRefTest<T, U> {
     pub fn new(t: T, f: fn(&mut T) -> &mut U) -> Self {
         let mut this = Self {
-            t: t.into(),
+            t,
             t_ref: SelfRef::null(),
         };
 
