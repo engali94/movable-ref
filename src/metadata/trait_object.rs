@@ -143,7 +143,9 @@ impl<T: ?Sized + Pointee<Metadata = ptr::DynMetadata<T>>> TraitObject<T> {
     }
 }
 
-unsafe impl<T: ?Sized + Pointee<Metadata = ptr::DynMetadata<T>>> PointerRecomposition for TraitObject<T> {
+unsafe impl<T: ?Sized + Pointee<Metadata = ptr::DynMetadata<T>>> PointerRecomposition
+    for TraitObject<T>
+{
     type Components = ptr::DynMetadata<T>;
 
     #[inline]
