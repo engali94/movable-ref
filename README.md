@@ -2,6 +2,11 @@
 
 [![Crates.io](https://img.shields.io/crates/v/tether.svg)](https://crates.io/crates/tether)
 [![Documentation](https://docs.rs/tether/badge.svg)](https://docs.rs/tether)
+[![CI](https://github.com/engali94/tether/workflows/CI/badge.svg)](https://github.com/engali94/tether/actions)
+[![Ubuntu](https://img.shields.io/github/actions/workflow/status/engali94/tether/ci.yml?branch=main&label=Ubuntu&logo=ubuntu)](https://github.com/engali94/tether/actions)
+[![macOS](https://img.shields.io/github/actions/workflow/status/engali94/tether/ci.yml?branch=main&label=macOS&logo=apple)](https://github.com/engali94/tether/actions)
+[![Windows](https://img.shields.io/github/actions/workflow/status/engali94/tether/ci.yml?branch=main&label=Windows&logo=windows)](https://github.com/engali94/tether/actions)
+[![MSRV](https://img.shields.io/badge/MSRV-1.70+-blue.svg)](https://github.com/engali94/tether/actions)
 
 A Rust library for **offset based pointers** that enable movable self-referential data structures.
 
