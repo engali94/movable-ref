@@ -144,7 +144,7 @@ fn sub_str() {
 #[test]
 fn check_copy() {
     fn is_copy<T: Copy>() {}
-    
+
     #[allow(unused, path_statements)]
     fn check<T: ?Sized + PointerRecomposition, I: Offset>() {
         is_copy::<SelfRef<T, I>>;
@@ -154,7 +154,7 @@ fn check_copy() {
 #[cfg(feature = "nightly")]
 mod nightly {
     use super::*;
-    
+
     #[test]
     fn check_trait_object_simple() {
         let s = SelfRef::<[u8; 5], TraitObject<dyn PartialEq<[u8]>>>::new(
@@ -162,7 +162,7 @@ mod nightly {
             |x| unsafe {
                 let x = &mut *(&mut x[2..] as *mut [u8] as *mut [u8; 3]);
                 TraitObject::from_mut(x)
-            }
+            },
         );
 
         assert_eq!(*s.t(), [0, 1, 2, 3, 4]);
@@ -178,14 +178,14 @@ mod nightly {
             |x| unsafe {
                 let x = &mut *(&mut x[2..] as *mut [u8] as *mut [u8; 3]);
                 TraitObject::from_mut(x)
-            }
+            },
         );
 
         assert_eq!(*s.t(), [0, 1, 2, 3, 4]);
 
         let eq: &[u8] = &[2, 3, 4];
         assert!(s.t_ref().as_ref() == eq);
-    
+
         #[inline(never)]
         fn force_move<T>(t: T) -> T {
             t
@@ -206,7 +206,7 @@ mod nightly {
             |x| unsafe {
                 let x = &mut *(&mut x[2..] as *mut [u8] as *mut [u8; 3]);
                 TraitObject::from_mut(x)
-            }
+            },
         );
 
         assert_eq!(*s.t(), [0, 1, 2, 3, 4]);

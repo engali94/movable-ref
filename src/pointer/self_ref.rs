@@ -3,13 +3,13 @@
 //! This module contains the main `SelfRef` type that represents a relative pointer.
 
 use crate::metadata::PointerRecomposition;
-use crate::offset::{Offset, Nullable, Ptr};
+use crate::offset::{Nullable, Offset, Ptr};
 use crate::pointer::unreachable::UncheckedOptionExt as _;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 use std::ptr::NonNull;
 
-/// It is always safe to cast between a 
+/// It is always safe to cast between a
 /// `Option<NonNull<T>>` and a `*mut T`
 /// because they are the exact same in memory
 #[inline(always)]
@@ -18,22 +18,22 @@ fn nn_to_ptr<T: ?Sized>(nn: Ptr<T>) -> *mut T {
 }
 
 /// A pointer that stores offsets instead of addresses, enabling movable self-referential structures.
-/// 
+///
 /// Unlike regular pointers that become invalid when data moves, `SelfRef` stores the relative
 /// distance to its target. This offset remains valid regardless of where the containing structure
 /// is moved in memory - stack, heap, or anywhere else.
-/// 
+///
 /// The magic happens through the offset type `I`: use `i8` for tiny 1-byte pointers with ±127 byte
 /// range, `i16` for 2-byte pointers with ±32KB range, or larger types for bigger structures.
-/// 
+///
 /// ```rust
 /// use tether::SelfRef;
-/// 
+///
 /// struct Node {
 ///     value: String,
 ///     self_ref: SelfRef<String, i16>,  // 2 bytes instead of 8
 /// }
-/// 
+///
 /// impl Node {
 ///     fn new(value: String) -> Self {
 ///         let mut node = Self {
@@ -44,24 +44,28 @@ fn nn_to_ptr<T: ?Sized>(nn: Ptr<T>) -> *mut T {
 ///         node
 ///     }
 /// }
-/// 
+///
 /// // Works everywhere - stack, heap, vectors
 /// let node = Node::new("test".into());
 /// let boxed = Box::new(node);              // ✓ Moves to heap
 /// let mut vec = vec![*boxed];              // ✓ Moves again  
 /// let value = unsafe { vec[0].self_ref.as_ref_unchecked() };  // ✓ Still valid
 /// ```
-/// 
+///
 /// # Safety Considerations
-/// 
+///
 /// `SelfRef` uses `unsafe` internally but provides safe setup methods. The main safety requirement
 /// is that once set, the relative positions of the pointer and target must not change. Moving
 /// the entire structure is always safe - it's only internal layout changes that cause issues.
-/// 
+///
 /// Special care needed with packed structs: field reordering during drops can invalidate offsets.
-/// 
+///
 /// Using `NonZero*` offset types with self-pointing (zero offset) is undefined behavior.
-pub struct SelfRef<T: ?Sized + PointerRecomposition, I: Offset = isize>(I, MaybeUninit<T::Components>, PhantomData<*mut T>);
+pub struct SelfRef<T: ?Sized + PointerRecomposition, I: Offset = isize>(
+    I,
+    MaybeUninit<T::Components>,
+    PhantomData<*mut T>,
+);
 
 // Ergonomics and ptr like impls
 
@@ -88,7 +92,7 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> From<I> for SelfRef<T, I> {
 
 impl<T: ?Sized + PointerRecomposition, I: Nullable> SelfRef<T, I> {
     /// Creates an unset relative pointer.
-    /// 
+    ///
     /// This is the starting point for most `SelfRef` usage - create a null pointer,
     /// then use `set()` to point it at your target data.
     #[inline(always)]
@@ -105,13 +109,13 @@ impl<T: ?Sized + PointerRecomposition, I: Nullable> SelfRef<T, I> {
 
 impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     /// Sets the pointer to target the given value.
-    /// 
+    ///
     /// Computes the offset from this `SelfRef`'s location to the target value.
     /// Returns an error if the distance is too large for the offset type `I`.
-    /// 
+    ///
     /// This is the safe way to establish the self-reference - it validates that
     /// the offset fits before storing it.
-    /// 
+    ///
     /// ```rust
     /// let mut data = "hello".to_string();
     /// let mut ptr: SelfRef<String, i16> = SelfRef::null();
@@ -126,12 +130,12 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     }
 
     /// Sets the pointer without bounds checking.
-    /// 
+    ///
     /// Like `set()` but assumes the offset will fit in type `I`. Used when you've
     /// already validated the distance or are reconstructing a known-good pointer.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// The offset between `value` and `self` must be representable in `I`.
     /// `value` must not be null.
     #[inline]
@@ -141,23 +145,23 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     }
 
     /// Reconstructs the target pointer without null checking.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// The pointer must have been successfully set and the relative positions
     /// of the pointer and target must not have changed since setting.
     #[inline]
     unsafe fn as_raw_unchecked_impl(&self) -> *const T {
         nn_to_ptr(T::recompose(
             NonNull::new(self.0.add(self as *const Self as *const u8)),
-            self.1.assume_init()
+            self.1.assume_init(),
         ))
     }
 
     /// Reconstructs the target as a mutable raw pointer.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// Same as `as_raw_unchecked_impl`.
     #[inline]
     pub unsafe fn as_raw_unchecked(&mut self) -> *mut T {
@@ -165,24 +169,25 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     }
 
     /// Reconstructs the target as a `NonNull` pointer.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// Same as `as_raw_unchecked_impl`.
     #[inline]
     pub unsafe fn as_non_null_unchecked(&mut self) -> NonNull<T> {
         T::recompose(
             NonNull::new(self.0.add(self as *mut Self as *mut u8)),
-            self.1.assume_init()
-        ).unchecked_unwrap("Tried to use an unset relative pointer, this is UB in release mode!")
+            self.1.assume_init(),
+        )
+        .unchecked_unwrap("Tried to use an unset relative pointer, this is UB in release mode!")
     }
 
     /// Reconstructs the target as an immutable reference.
-    /// 
+    ///
     /// This is the most common way to access your self-referenced data.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// Same as `as_raw_unchecked_impl`. Standard reference aliasing rules apply.
     #[inline]
     pub unsafe fn as_ref_unchecked(&self) -> &T {
@@ -190,9 +195,9 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     }
 
     /// Reconstructs the target as a mutable reference.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// Same as `as_raw_unchecked_impl`. Standard reference aliasing rules apply.
     #[inline]
     pub unsafe fn as_mut_unchecked(&mut self) -> &mut T {
@@ -207,7 +212,7 @@ macro_rules! as_non_null_impl {
         } else {
             T::recompose(
                 NonNull::new($self.0.add($self as *const Self as *const u8)),
-                $self.1.assume_init()
+                $self.1.assume_init(),
             )
         }
     };
@@ -215,9 +220,9 @@ macro_rules! as_non_null_impl {
 
 impl<T: ?Sized + PointerRecomposition, I: Nullable> SelfRef<T, I> {
     /// Reconstructs the target as a raw pointer, returning null if unset.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// If the pointer was set, the relative positions must not have changed.
     /// For most pointer types this is safe, but may be undefined behavior
     /// for some exotic pointer representations.
@@ -227,9 +232,9 @@ impl<T: ?Sized + PointerRecomposition, I: Nullable> SelfRef<T, I> {
     }
 
     /// Reconstructs the target as a `NonNull` pointer, returning `None` if unset.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// If the pointer was set, the relative positions must not have changed.
     #[inline]
     pub unsafe fn as_non_null(&mut self) -> Ptr<T> {
@@ -237,9 +242,9 @@ impl<T: ?Sized + PointerRecomposition, I: Nullable> SelfRef<T, I> {
     }
 
     /// Reconstructs the target as an immutable reference, returning `None` if unset.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// Standard reference aliasing rules apply. If the pointer was set,
     /// the relative positions must not have changed.
     #[inline]
@@ -248,9 +253,9 @@ impl<T: ?Sized + PointerRecomposition, I: Nullable> SelfRef<T, I> {
     }
 
     /// Reconstructs the target as a mutable reference, returning `None` if unset.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// Standard reference aliasing rules apply. If the pointer was set,
     /// the relative positions must not have changed.
     #[inline]

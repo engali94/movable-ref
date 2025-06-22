@@ -1,5 +1,5 @@
 //! Metadata handling for different types used in SelfRef.
-//! 
+//!
 //! This module provides metadata extraction and composition functionality for
 //! both sized types and unsized types like slices and str.
 

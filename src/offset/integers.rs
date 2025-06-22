@@ -1,4 +1,4 @@
-use super::delta::{Offset, Nullable};
+use super::delta::{Nullable, Offset};
 use crate::error::{IntegerOffsetError, IntegerOffsetErrorImpl};
 use crate::pointer::unreachable::{UncheckedOptionExt, OVERFLOW_SUB};
 use core::num::*;
@@ -77,4 +77,4 @@ macro_rules! impl_delta_nonzero {
     )*};
 }
 
-impl_delta_nonzero! { NonZeroI8 i8, NonZeroI16 i16, NonZeroI32 i32, NonZeroI64 i64, NonZeroI128 i128, NonZeroIsize isize } 
+impl_delta_nonzero! { NonZeroI8 i8, NonZeroI16 i16, NonZeroI32 i32, NonZeroI64 i64, NonZeroI128 i128, NonZeroIsize isize }

@@ -1,6 +1,6 @@
-use tether::SelfRef;
 use std::hint::black_box;
 use std::time::Instant;
+use tether::SelfRef;
 
 struct SelfRefRelPtr {
     data: [u64; 100],
@@ -13,11 +13,11 @@ impl SelfRefRelPtr {
             data: [0u64; 100],
             ptr: SelfRef::null(),
         };
-        
+
         for (i, item) in this.data.iter_mut().enumerate() {
             *item = i as u64 * 2;
         }
-        
+
         this.ptr.set(&mut this.data[50]).unwrap();
         this
     }
@@ -38,11 +38,8 @@ impl DirectAccess {
         for (i, item) in data.iter_mut().enumerate() {
             *item = i as u64 * 2;
         }
-        
-        Self {
-            data,
-            index: 50,
-        }
+
+        Self { data, index: 50 }
     }
 
     fn get_value(&self) -> u64 {
@@ -52,17 +49,41 @@ impl DirectAccess {
 
 fn benchmark_memory_usage() {
     println!("Memory Usage Comparison:");
-    println!("  SelfRef<u64, i8>:   {} bytes", std::mem::size_of::<SelfRef<u64, i8>>());
-    println!("  SelfRef<u64, i16>:  {} bytes", std::mem::size_of::<SelfRef<u64, i16>>());
-    println!("  SelfRef<u64, i32>:  {} bytes", std::mem::size_of::<SelfRef<u64, i32>>());
-    println!("  SelfRef<u64, isize>:{} bytes", std::mem::size_of::<SelfRef<u64, isize>>());
-    println!("  *const u64:        {} bytes", std::mem::size_of::<*const u64>());
-    println!("  usize (index):     {} bytes", std::mem::size_of::<usize>());
+    println!(
+        "  SelfRef<u64, i8>:   {} bytes",
+        std::mem::size_of::<SelfRef<u64, i8>>()
+    );
+    println!(
+        "  SelfRef<u64, i16>:  {} bytes",
+        std::mem::size_of::<SelfRef<u64, i16>>()
+    );
+    println!(
+        "  SelfRef<u64, i32>:  {} bytes",
+        std::mem::size_of::<SelfRef<u64, i32>>()
+    );
+    println!(
+        "  SelfRef<u64, isize>:{} bytes",
+        std::mem::size_of::<SelfRef<u64, isize>>()
+    );
+    println!(
+        "  *const u64:        {} bytes",
+        std::mem::size_of::<*const u64>()
+    );
+    println!(
+        "  usize (index):     {} bytes",
+        std::mem::size_of::<usize>()
+    );
     println!();
-    
+
     println!("Structure Size Comparison:");
-    println!("  SelfRefRelPtr:     {} bytes", std::mem::size_of::<SelfRefRelPtr>());
-    println!("  DirectAccess:      {} bytes", std::mem::size_of::<DirectAccess>());
+    println!(
+        "  SelfRefRelPtr:     {} bytes",
+        std::mem::size_of::<SelfRefRelPtr>()
+    );
+    println!(
+        "  DirectAccess:      {} bytes",
+        std::mem::size_of::<DirectAccess>()
+    );
     println!();
 }
 
@@ -87,29 +108,31 @@ fn benchmark_access_performance() {
     println!("Access Performance ({} iterations):", ITERATIONS);
     println!("  SelfRef access:    {:?}", rel_ptr_time);
     println!("  Direct access:     {:?}", direct_time);
-    println!("  Overhead:          {:.2}%", 
-        ((rel_ptr_time.as_nanos() as f64 / direct_time.as_nanos() as f64) - 1.0) * 100.0);
+    println!(
+        "  Overhead:          {:.2}%",
+        ((rel_ptr_time.as_nanos() as f64 / direct_time.as_nanos() as f64) - 1.0) * 100.0
+    );
     println!();
 }
 
 fn demonstrate_movability() {
     println!("Movability Demonstration:");
-    
+
     let s = SelfRefRelPtr::new();
     println!("  Original value: {}", s.get_value());
-    
+
     let boxed = Box::new(s);
     println!("  After Box::new: {}", boxed.get_value());
-    
+
     let moved_again = *boxed;
     println!("  After unbox:    {}", moved_again.get_value());
-    
+
     let mut vec = Vec::new();
     vec.push(moved_again);
     vec.push(SelfRefRelPtr::new());
     println!("  In vector[0]:   {}", vec[0].get_value());
     println!("  In vector[1]:   {}", vec[1].get_value());
-    
+
     println!("  ✓ All moves preserved the internal reference!");
     println!();
 }
@@ -129,4 +152,4 @@ fn main() {
     println!("- Enables impossible patterns: movable self-referential structures");
     println!("- Zero-cost abstraction: overhead comes from offset calculation");
     println!("- Perfect for embedded systems where every byte counts");
-} 
+}

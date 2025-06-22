@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::hint::black_box;
 use std::cell::RefCell;
+use std::hint::black_box;
 use std::pin::Pin;
 use std::rc::Rc;
 use tether::SelfRef;
@@ -10,7 +10,7 @@ use tether::SelfRef;
 // ============================================================================
 
 struct SelfRefStruct {
-    data: [u64; 100], 
+    data: [u64; 100],
     ptr: SelfRef<u64, i16>,
 }
 
@@ -88,81 +88,71 @@ impl DirectStruct {
 fn bench_memory_footprint(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_footprint");
     group.sample_size(10);
-    
+
     group.bench_function("SelfRef<u64, i8>", |b| {
         b.iter(|| black_box(std::mem::size_of::<SelfRef<u64, i8>>()))
     });
-    
+
     group.bench_function("SelfRef<u64, i16>", |b| {
         b.iter(|| black_box(std::mem::size_of::<SelfRef<u64, i16>>()))
     });
-    
+
     group.bench_function("*const u64", |b| {
         b.iter(|| black_box(std::mem::size_of::<*const u64>()))
     });
-    
+
     group.bench_function("Rc<RefCell<u64>>", |b| {
         b.iter(|| black_box(std::mem::size_of::<Rc<RefCell<u64>>>()))
     });
-    
+
     group.finish();
 }
 
 fn bench_access_speed(c: &mut Criterion) {
     let mut group = c.benchmark_group("access_speed");
     group.sample_size(50);
-    
+
     let self_ref = SelfRefStruct::new();
     let pinned = PinnedStruct::new();
     let rc_refcell = RcRefCellStruct::new();
     let direct = DirectStruct::new();
-    
-    group.bench_function("SelfRef", |b| {
-        b.iter(|| black_box(self_ref.get_value()))
-    });
-    
-    group.bench_function("Pin<Box<T>>", |b| {
-        b.iter(|| black_box(pinned.get_value()))
-    });
-    
+
+    group.bench_function("SelfRef", |b| b.iter(|| black_box(self_ref.get_value())));
+
+    group.bench_function("Pin<Box<T>>", |b| b.iter(|| black_box(pinned.get_value())));
+
     group.bench_function("Rc<RefCell<T>>", |b| {
         b.iter(|| black_box(rc_refcell.get_value()))
     });
-    
+
     group.bench_function("Direct Access", |b| {
         b.iter(|| black_box(direct.get_value()))
     });
-    
+
     group.finish();
 }
 
 fn bench_creation_speed(c: &mut Criterion) {
     let mut group = c.benchmark_group("creation_speed");
     group.sample_size(30);
-    
-    group.bench_function("SelfRef", |b| {
-        b.iter(|| black_box(SelfRefStruct::new()))
-    });
-    
-    group.bench_function("Pin<Box<T>>", |b| {
-        b.iter(|| black_box(PinnedStruct::new()))
-    });
-    
+
+    group.bench_function("SelfRef", |b| b.iter(|| black_box(SelfRefStruct::new())));
+
+    group.bench_function("Pin<Box<T>>", |b| b.iter(|| black_box(PinnedStruct::new())));
+
     group.bench_function("Rc<RefCell<T>>", |b| {
         b.iter(|| black_box(RcRefCellStruct::new()))
     });
-    
-    group.bench_function("Direct", |b| {
-        b.iter(|| black_box(DirectStruct::new()))
-    });
-    
+
+    group.bench_function("Direct", |b| b.iter(|| black_box(DirectStruct::new())));
+
     group.finish();
 }
 
 fn bench_move_semantics(c: &mut Criterion) {
     let mut group = c.benchmark_group("move_semantics");
-        group.sample_size(30);
-    
+    group.sample_size(30);
+
     group.bench_function("SelfRef move", |b| {
         b.iter(|| {
             let s = SelfRefStruct::new();
@@ -170,7 +160,7 @@ fn bench_move_semantics(c: &mut Criterion) {
             black_box(moved.get_value())
         })
     });
-    
+
     group.bench_function("Rc<RefCell<T>> clone", |b| {
         b.iter(|| {
             let s = RcRefCellStruct::new();
@@ -178,7 +168,7 @@ fn bench_move_semantics(c: &mut Criterion) {
             black_box(cloned.get_value())
         })
     });
-    
+
     group.bench_function("Direct move", |b| {
         b.iter(|| {
             let s = DirectStruct::new();
@@ -186,7 +176,7 @@ fn bench_move_semantics(c: &mut Criterion) {
             black_box(moved.get_value())
         })
     });
-    
+
     group.finish();
 }
 
@@ -197,4 +187,4 @@ criterion_group!(
     bench_creation_speed,
     bench_move_semantics
 );
-criterion_main!(benches); 
+criterion_main!(benches);

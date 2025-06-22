@@ -49,7 +49,7 @@ and `I` is the offset storage type. In practice, you can ignore `I`
 use any type implementing `Delta`: `i8`, `i16`, `i32`, `i64`, `i128`, `isize`.
 
 The tradeoff: smaller offset types reduce addressable range.
-`isize` covers at least half of addressable memory. For self-referential 
+`isize` covers at least half of addressable memory. For self-referential
 structures, choose an offset type whose range exceeds your structure size:
 `std::mem::size_of::<YourStruct>() <= I::MAX`.
 
@@ -122,12 +122,12 @@ extern crate core as std;
 #[cfg(test)]
 mod tests;
 
-mod pointer;
-mod offset;
-mod metadata;
 mod error;
+mod metadata;
+mod offset;
+mod pointer;
 
-pub use self::pointer::*;
-pub use self::offset::*;
-pub use self::metadata::*;
 pub use self::error::*;
+pub use self::metadata::*;
+pub use self::offset::*;
+pub use self::pointer::*;
