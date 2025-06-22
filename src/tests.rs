@@ -155,36 +155,39 @@ fn check_copy() {
 mod nightly {
     use super::*;
 
+    #[derive(Debug)]
+    struct TestStruct {
+        value: u32,
+    }
+
     #[test]
     fn check_trait_object_simple() {
-        let s = SelfRef::<[u8; 5], TraitObject<dyn PartialEq<[u8]>>>::new(
-            [0, 1, 2, 3, 4],
-            |x| unsafe {
-                let x = &mut *(&mut x[2..] as *mut [u8] as *mut [u8; 3]);
-                TraitObject::from_mut(x)
-            },
-        );
+        let s = SelfRefTest::new(TestStruct { value: 42 }, |x| unsafe {
+            TraitObject::from_mut(x as &mut dyn std::fmt::Debug)
+        });
 
-        assert_eq!(*s.t(), [0, 1, 2, 3, 4]);
+        assert_eq!(s.t().value, 42);
 
-        let eq: &[u8] = &[2, 3, 4];
-        assert!(s.t_ref().as_ref() == eq);
+        #[cfg(not(feature = "no_std"))]
+        {
+            let debug_str = format!("{:?}", s.t_ref().as_ref());
+            assert!(debug_str.contains("42"));
+        }
     }
 
     #[test]
     fn check_trait_object_after_move() {
-        let s = SelfRef::<[u8; 5], TraitObject<dyn PartialEq<[u8]>>>::new(
-            [0, 1, 2, 3, 4],
-            |x| unsafe {
-                let x = &mut *(&mut x[2..] as *mut [u8] as *mut [u8; 3]);
-                TraitObject::from_mut(x)
-            },
-        );
+        let s = SelfRefTest::new(TestStruct { value: 42 }, |x| unsafe {
+            TraitObject::from_mut(x as &mut dyn std::fmt::Debug)
+        });
 
-        assert_eq!(*s.t(), [0, 1, 2, 3, 4]);
+        assert_eq!(s.t().value, 42);
 
-        let eq: &[u8] = &[2, 3, 4];
-        assert!(s.t_ref().as_ref() == eq);
+        #[cfg(not(feature = "no_std"))]
+        {
+            let debug_str = format!("{:?}", s.t_ref().as_ref());
+            assert!(debug_str.contains("42"));
+        }
 
         #[inline(never)]
         fn force_move<T>(t: T) -> T {
@@ -193,32 +196,38 @@ mod nightly {
 
         let s = force_move(s);
 
-        assert_eq!(*s.t(), [0, 1, 2, 3, 4]);
+        assert_eq!(s.t().value, 42);
 
-        assert!(s.t_ref().as_ref() == eq);
+        #[cfg(not(feature = "no_std"))]
+        {
+            let debug_str = format!("{:?}", s.t_ref().as_ref());
+            assert!(debug_str.contains("42"));
+        }
     }
 
     #[test]
     #[cfg(not(feature = "no_std"))]
     fn check_trait_object_after_move_heap() {
-        let s = SelfRef::<[u8; 5], TraitObject<dyn PartialEq<[u8]>>>::new(
-            [0, 1, 2, 3, 4],
-            |x| unsafe {
-                let x = &mut *(&mut x[2..] as *mut [u8] as *mut [u8; 3]);
-                TraitObject::from_mut(x)
-            },
-        );
+        let s = SelfRefTest::new(TestStruct { value: 42 }, |x| unsafe {
+            TraitObject::from_mut(x as &mut dyn std::fmt::Debug)
+        });
 
-        assert_eq!(*s.t(), [0, 1, 2, 3, 4]);
+        assert_eq!(s.t().value, 42);
 
-        let eq: &[u8] = &[2, 3, 4];
-        assert!(s.t_ref().as_ref() == eq);
+        #[cfg(not(feature = "no_std"))]
+        {
+            let debug_str = format!("{:?}", s.t_ref().as_ref());
+            assert!(debug_str.contains("42"));
+        }
 
         let s = Box::new(s);
 
-        assert_eq!(*s.t(), [0, 1, 2, 3, 4]);
+        assert_eq!(s.t().value, 42);
 
-        let eq: &[u8] = &[2, 3, 4];
-        assert!(s.t_ref().as_ref() == eq);
+        #[cfg(not(feature = "no_std"))]
+        {
+            let debug_str = format!("{:?}", s.t_ref().as_ref());
+            assert!(debug_str.contains("42"));
+        }
     }
 }

@@ -174,6 +174,17 @@ unsafe impl PointerRecomposition for char {
     }
 }
 
+// Arrays
+unsafe impl<T, const N: usize> PointerRecomposition for [T; N] {
+    type Components = ();
+    #[inline]
+    fn decompose(_: &Self) -> Self::Components {}
+    #[inline]
+    unsafe fn recompose(ptr: Ptr<u8>, (): Self::Components) -> Ptr<Self> {
+        ptr.map(NonNull::cast)
+    }
+}
+
 // Common container types
 unsafe impl<T> PointerRecomposition for Option<T> {
     type Components = ();

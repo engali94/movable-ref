@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 use std::hint::black_box;
 use std::time::Instant;
 use tether::SelfRef;
