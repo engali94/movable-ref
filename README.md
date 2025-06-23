@@ -98,7 +98,7 @@ let mut data = MyStruct {
 // 2. Set the relative pointer
 data.ptr.set(&mut data.value).unwrap();
 
-// 3. Use it safely
+// 3. Dereference the pointer
 let reference: &str = unsafe { data.ptr.as_ref_unchecked() };
 ```
 
