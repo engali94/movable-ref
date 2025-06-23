@@ -67,7 +67,7 @@ println!("{}", vec[0].get_value()); // ✓ Still works!
 
 Offset pointers solve a fundamental limitation in Rust: creating efficient, movable self-referential data structures. While other solutions exist, tether provides:
 
-1. **Embedded Systems Freidnly**: Can run in very memory constrained devices. 
+1. **Embedded Systems Friendly**: Can run in very memory constrained devices. 
 2. **Movement freedom**: Structures work on stack, heap, or anywhere unlike `Pin`
 3. **True zero-cost abstraction**: Zero to Minimal runtime overhead
 4. **Memory efficiency**: 1-8 bytes vs 8+ bytes for alternatives  
