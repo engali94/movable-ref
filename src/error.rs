@@ -12,8 +12,6 @@ pub(crate) enum IntegerOffsetErrorImpl {
     Conversion(isize),
     /// Failed to subtract the two usizes (overflowed isize)
     Sub(usize, usize),
-    /// Got a zero when a non-zero value was expected (for `NonZero*`)
-    InvalidNonZero,
 }
 
 #[cfg(not(feature = "no_std"))]
@@ -33,13 +31,6 @@ mod fmt {
                 ),
                 IntegerOffsetErrorImpl::Sub(a, b) => {
                     write!(f, "Difference is beween {} and {} overflows `isize`", a, b)
-                }
-
-                IntegerOffsetErrorImpl::InvalidNonZero => {
-                    write!(
-                        f,
-                        "Difference was zero when a `NonZero*` type was specified"
-                    )
                 }
             }
         }

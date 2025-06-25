@@ -14,7 +14,6 @@ impl Node {
             self_ref: SelfRef::null(),
         };
 
-        // Set up the self-reference
         node.self_ref.set(&mut node.value).unwrap();
         node
     }
