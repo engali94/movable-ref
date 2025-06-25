@@ -168,7 +168,7 @@ mod nightly {
 
         assert_eq!(s.t().value, 42);
 
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         {
             let debug_str = format!("{:?}", s.t_ref().as_ref());
             assert!(debug_str.contains("42"));
@@ -183,7 +183,7 @@ mod nightly {
 
         assert_eq!(s.t().value, 42);
 
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         {
             let debug_str = format!("{:?}", s.t_ref().as_ref());
             assert!(debug_str.contains("42"));
@@ -198,7 +198,7 @@ mod nightly {
 
         assert_eq!(s.t().value, 42);
 
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         {
             let debug_str = format!("{:?}", s.t_ref().as_ref());
             assert!(debug_str.contains("42"));
@@ -206,7 +206,7 @@ mod nightly {
     }
 
     #[test]
-    #[cfg(not(feature = "no_std"))]
+    #[cfg(feature = "std")]
     fn check_trait_object_after_move_heap() {
         let s = SelfRefTest::new(TestStruct { value: 42 }, |x| unsafe {
             TraitObject::from_mut(x as &mut dyn std::fmt::Debug)
@@ -214,7 +214,7 @@ mod nightly {
 
         assert_eq!(s.t().value, 42);
 
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         {
             let debug_str = format!("{:?}", s.t_ref().as_ref());
             assert!(debug_str.contains("42"));
@@ -224,7 +224,7 @@ mod nightly {
 
         assert_eq!(s.t().value, 42);
 
-        #[cfg(not(feature = "no_std"))]
+        #[cfg(feature = "std")]
         {
             let debug_str = format!("{:?}", s.t_ref().as_ref());
             assert!(debug_str.contains("42"));

@@ -2,9 +2,9 @@ use super::traits::PointerRecomposition;
 use crate::offset::Ptr;
 use std::ptr::NonNull;
 
-#[cfg(feature = "no_std")]
+#[cfg(not(feature = "std"))]
 extern crate alloc;
-#[cfg(feature = "no_std")]
+#[cfg(not(feature = "std"))]
 use alloc::{string::String, vec::Vec};
 
 unsafe impl<T: ?Sized> PointerRecomposition for &T {

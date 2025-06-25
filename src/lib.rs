@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "no_std", no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(feature = "nightly", feature(ptr_metadata))]
 #![allow(clippy::needless_doctest_main)]
 #![forbid(missing_docs)]
@@ -19,7 +19,17 @@ See the `SelfRef` type documentation for safety information.
 
 ### `no_std`
 
-This crate is `no_std` compatible. Enable the `no_std` feature to use without the standard library.
+This crate is `no_std` compatible. Disable the `std` feature to use without the standard library.
+
+```toml
+# For no_std environments (embedded systems, etc.)
+[dependencies]
+movable-ref = { version = "0.1.0", default-features = false }
+
+# For std environments (default)
+[dependencies]
+movable-ref = "0.1.0"
+```
 
 ## Example
 
@@ -116,7 +126,7 @@ be invalidated - which occurs when direct pointer modification is impossible
 and field offsets remain constant after initialization.
 */
 
-#[cfg(feature = "no_std")]
+#[cfg(not(feature = "std"))]
 extern crate core as std;
 
 #[cfg(test)]

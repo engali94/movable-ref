@@ -11,8 +11,8 @@ readme = "README.md"
 edition = "2021"
 
 [features]
-default = []
-no_std = []
+default = ["std"]
+std = []
 nightly = []
 
 [dev-dependencies]

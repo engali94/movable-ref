@@ -14,7 +14,7 @@ pub(crate) enum IntegerOffsetErrorImpl {
     Sub(usize, usize),
 }
 
-#[cfg(not(feature = "no_std"))]
+#[cfg(feature = "std")]
 impl std::error::Error for IntegerOffsetError {}
 
 mod fmt {
