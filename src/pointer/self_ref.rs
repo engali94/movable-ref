@@ -59,8 +59,6 @@ fn nn_to_ptr<T: ?Sized>(nn: Ptr<T>) -> *mut T {
 /// the entire structure is always safe - it's only internal layout changes that cause issues.
 ///
 /// Special care needed with packed structs: field reordering during drops can invalidate offsets.
-///
-/// Using `NonZero*` offset types with self-pointing (zero offset) is undefined behavior.
 pub struct SelfRef<T: ?Sized + PointerRecomposition, I: Offset = isize>(
     I,
     MaybeUninit<T::Components>,
