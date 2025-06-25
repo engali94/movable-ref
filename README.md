@@ -104,12 +104,12 @@ let reference: &str = unsafe { data.ptr.as_ref_unchecked() };
 
 ## Features
 
-- **`no_std`**: Works in embedded environments
+- **`no_std`**: Works in embedded environments (disable default `std` feature)
 - **`nightly`**: Trait object support with nightly Rust
 
 ```toml
 [dependencies]
-movable-ref = { version = "0.1.0", features = ["no_std"] }
+movable-ref = { version = "0.1.0", default-features = false }
 ```
 ## Performance Benchmarks
 
