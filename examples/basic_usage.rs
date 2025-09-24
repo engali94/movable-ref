@@ -1,27 +1,21 @@
 #![allow(clippy::uninlined_format_args)]
 
-use movable_ref::SelfRef;
+use movable_ref::{SelfRefCell, selfref_accessors};
 
 struct Node {
-    value: String,
-    self_ref: SelfRef<String, i16>,
+    value: SelfRefCell<String, i16>,
 }
 
 impl Node {
     fn new(value: String) -> Self {
-        let mut node = Self {
-            value,
-            self_ref: SelfRef::null(),
-        };
-
-        node.self_ref.set(&mut node.value).unwrap();
-        node
+        let value = SelfRefCell::new(value).unwrap();
+        Self { value }
     }
+}
 
-    fn get_value(&self) -> &str {
-        unsafe { self.self_ref.as_ref_unchecked() }
-    }
+selfref_accessors!(impl Node { get_value, get_value_mut: value -> String });
 
+impl Node {
     fn len(&self) -> usize {
         self.get_value().len()
     }
@@ -36,9 +30,9 @@ fn main() {
 
     let nodes = [*boxed_node, Node::new("Another node".to_string())];
 
-    for (i, node) in nodes.iter().enumerate() {
+    nodes.iter().enumerate().for_each(|(i, node)| {
         println!("Node {}: '{}' (len: {})", i, node.get_value(), node.len());
-    }
+    });
 
     println!("\nNote: These structures remain valid after all moves!");
 }

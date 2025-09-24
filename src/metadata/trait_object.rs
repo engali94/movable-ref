@@ -42,14 +42,15 @@ use std::ptr::{self, NonNull, Pointee};
 ///         container
 ///     }
 ///     
-///     fn get_any(&self) -> &dyn Any {
-///         unsafe { self.any_ref.as_ref_unchecked().as_ref() }
+///     fn get_any(&mut self) -> &dyn Any {
+///         let base = self as *const _ as *const u8;
+///         unsafe { self.any_ref.get_ref_from_base_unchecked(base).as_ref() }
 ///     }
 /// }
 ///
 /// // Works even after moving!
 /// let container = Container::new(vec![1, 2, 3]);
-/// let boxed = Box::new(container);
+/// let mut boxed = Box::new(container);
 /// println!("Type: {:?}", boxed.get_any().type_id());
 /// # }
 /// ```
@@ -123,12 +124,11 @@ impl<T: ?Sized + Pointee<Metadata = ptr::DynMetadata<T>>> TraitObject<T> {
     /// # #![feature(ptr_metadata)]
     /// # use movable_ref::{SelfRef, TraitObject};
     /// # use std::any::Any;
-    /// # let mut data = vec![1u8, 2, 3];
-    /// # let mut self_ref: SelfRef<TraitObject<dyn Any>, i16> = SelfRef::null();
-    /// # let trait_obj = unsafe { TraitObject::from_mut(&mut data as &mut dyn Any) };
-    /// # self_ref.set(trait_obj).unwrap();
-    ///
-    /// let retrieved = unsafe { self_ref.as_ref_unchecked() };
+    /// # struct C { data: Vec<u8>, r: SelfRef<TraitObject<dyn Any>, i16> }
+    /// # let mut c = C { data: vec![1u8, 2, 3], r: SelfRef::null() };
+    /// # let trait_obj = unsafe { TraitObject::from_mut(&mut c.data as &mut dyn Any) };
+    /// # c.r.set(trait_obj).unwrap();
+    /// let retrieved = unsafe { c.r.get_ref_from_base_unchecked(&c as *const _ as *const u8) };
     /// let original: &dyn Any = retrieved.as_ref();
     /// ```
     pub fn as_ref(&self) -> &T {

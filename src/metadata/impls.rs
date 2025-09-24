@@ -270,8 +270,8 @@ unsafe impl<T> PointerRecomposition for [T] {
 
     #[inline]
     unsafe fn recompose(ptr: Ptr<u8>, data: Self::Components) -> Ptr<Self> {
-        Some(NonNull::from(std::slice::from_raw_parts_mut(
-            ptr?.as_ptr() as *mut T,
+        Some(NonNull::from(std::slice::from_raw_parts(
+            ptr?.as_ptr() as *const T,
             data,
         )))
     }
@@ -287,8 +287,8 @@ unsafe impl PointerRecomposition for str {
 
     #[inline]
     unsafe fn recompose(ptr: Ptr<u8>, data: Self::Components) -> Ptr<Self> {
-        Some(NonNull::from(std::str::from_utf8_unchecked_mut(
-            std::slice::from_raw_parts_mut(ptr?.as_ptr(), data),
+        Some(NonNull::from(std::str::from_utf8_unchecked(
+            std::slice::from_raw_parts(ptr?.as_ptr(), data),
         )))
     }
 }

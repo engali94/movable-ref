@@ -1,33 +1,31 @@
 #![allow(clippy::uninlined_format_args)]
 
-use movable_ref::SelfRef;
+use movable_ref::{SelfRefCell, selfref_accessors};
 use std::hint::black_box;
 use std::time::Instant;
 
 struct SelfRefRelPtr {
     data: [u64; 100],
-    ptr: SelfRef<u64, i16>,
+    ptr: SelfRefCell<u64, i16>,
 }
 
 impl SelfRefRelPtr {
     fn new() -> Self {
         let mut this = Self {
             data: [0u64; 100],
-            ptr: SelfRef::null(),
+            ptr: SelfRefCell::new(0u64).unwrap(),
         };
 
-        for (i, item) in this.data.iter_mut().enumerate() {
+        this.data.iter_mut().enumerate().for_each(|(i, item)| {
             *item = i as u64 * 2;
-        }
+        });
 
-        this.ptr.set(&mut this.data[50]).unwrap();
+        this.ptr = SelfRefCell::new(this.data[50]).unwrap();
         this
     }
-
-    fn get_value(&self) -> u64 {
-        unsafe { *self.ptr.as_ref_unchecked() }
-    }
 }
+
+selfref_accessors!(impl SelfRefRelPtr { get_value : ptr -> u64 });
 
 struct DirectAccess {
     data: [u64; 100],
@@ -37,9 +35,9 @@ struct DirectAccess {
 impl DirectAccess {
     fn new() -> Self {
         let mut data = [0u64; 100];
-        for (i, item) in data.iter_mut().enumerate() {
+        data.iter_mut().enumerate().for_each(|(i, item)| {
             *item = i as u64 * 2;
-        }
+        });
 
         Self { data, index: 50 }
     }
@@ -96,15 +94,15 @@ fn benchmark_access_performance() {
     let direct_struct = DirectAccess::new();
 
     let start = Instant::now();
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).for_each(|_| {
         black_box(rel_ptr_struct.get_value());
-    }
+    });
     let rel_ptr_time = start.elapsed();
 
     let start = Instant::now();
-    for _ in 0..ITERATIONS {
+    (0..ITERATIONS).for_each(|_| {
         black_box(direct_struct.get_value());
-    }
+    });
     let direct_time = start.elapsed();
 
     println!("Access Performance ({} iterations):", ITERATIONS);
