@@ -30,7 +30,10 @@ impl<T, U: ?Sized + PointerRecomposition> SelfRefTest<T, U> {
     }
 
     pub fn t_ref(&mut self) -> &U {
-        unsafe { self.t_ref.get_ref_from_base_unchecked(self as *const _ as *const u8) }
+        unsafe {
+            self.t_ref
+                .get_ref_from_base_unchecked(self as *const _ as *const u8)
+        }
     }
 
     #[allow(unused)]
@@ -112,7 +115,6 @@ fn swap() {
 #[test]
 fn aliasing() {
     let mut s = SelfRefTest::new("Hello World", id);
-
 
     *s.t_mut() = "Killer Move";
 

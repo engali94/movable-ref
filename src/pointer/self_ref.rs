@@ -86,7 +86,13 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> PartialEq for SelfRef<T, I> {
 /// Convert an offset into a `SelfRef`
 impl<T: ?Sized + PointerRecomposition, I: Offset> From<I> for SelfRef<T, I> {
     fn from(i: I) -> Self {
-        Self(i, MaybeUninit::uninit(), PhantomData, #[cfg(miri)] MaybeUninit::uninit())
+        Self(
+            i,
+            MaybeUninit::uninit(),
+            PhantomData,
+            #[cfg(miri)]
+            MaybeUninit::uninit(),
+        )
     }
 }
 
@@ -97,7 +103,13 @@ impl<T: ?Sized + PointerRecomposition, I: Nullable> SelfRef<T, I> {
     /// then use `set()` to point it at your target data.
     #[inline(always)]
     pub fn null() -> Self {
-        Self(I::NULL, MaybeUninit::uninit(), PhantomData, #[cfg(miri)] MaybeUninit::uninit())
+        Self(
+            I::NULL,
+            MaybeUninit::uninit(),
+            PhantomData,
+            #[cfg(miri)]
+            MaybeUninit::uninit(),
+        )
     }
 
     /// Checks if the pointer is unset.
@@ -196,8 +208,9 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
             let base = self as *mut Self as *const u8;
             let addr = self.0.add(base).addr();
             let exposed = addr as usize as *mut u8;
-            return T::recompose(NonNull::new(exposed), self.1.assume_init())
-                .unchecked_unwrap("Tried to use an unset relative pointer, this is UB in release mode!");
+            return T::recompose(NonNull::new(exposed), self.1.assume_init()).unchecked_unwrap(
+                "Tried to use an unset relative pointer, this is UB in release mode!",
+            );
         }
         T::recompose(
             NonNull::new(self.0.add(self as *mut Self as *mut u8)),
@@ -225,7 +238,10 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
         let self_ptr = self as *const Self as *const u8;
         let d_self = self_ptr.offset_from(base_ptr);
         let at_self = base_ptr.wrapping_offset(d_self);
-        let p = nn_to_ptr(T::recompose(NonNull::new(self.0.add(at_self)), self.1.assume_init()));
+        let p = nn_to_ptr(T::recompose(
+            NonNull::new(self.0.add(at_self)),
+            self.1.assume_init(),
+        ));
         &*p
     }
 
@@ -236,7 +252,10 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
         let self_ptr = self as *const Self as *const u8;
         let d_self = self_ptr.offset_from(base_ptr);
         let at_self = base_ptr.wrapping_offset(d_self);
-        let p = nn_to_ptr(T::recompose(NonNull::new(self.0.add(at_self)), self.1.assume_init()));
+        let p = nn_to_ptr(T::recompose(
+            NonNull::new(self.0.add(at_self)),
+            self.1.assume_init(),
+        ));
         &mut *p
     }
 

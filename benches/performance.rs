@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use movable_ref::{SelfRefCell, selfref_accessors};
+use movable_ref::{selfref_accessors, SelfRefCell};
 use std::cell::RefCell;
 use std::hint::black_box;
 use std::pin::Pin;

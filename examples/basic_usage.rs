@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 
-use movable_ref::{SelfRefCell, selfref_accessors};
+use movable_ref::{selfref_accessors, SelfRefCell};
 
 struct Node {
     value: SelfRefCell<String, i16>,

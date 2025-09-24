@@ -134,16 +134,16 @@ extern crate core as std;
 mod tests;
 
 mod error;
+mod macros;
 mod metadata;
 mod offset;
 mod pointer;
-mod macros;
 mod combinators {
     pub mod self_ref_cell;
 }
 
+pub use self::combinators::self_ref_cell::SelfRefCell;
 pub use self::error::*;
 pub use self::metadata::*;
 pub use self::offset::*;
 pub use self::pointer::*;
-pub use self::combinators::self_ref_cell::SelfRefCell;
