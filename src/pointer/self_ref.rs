@@ -225,12 +225,18 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     }
 
     /// Reconstructs a shared reference using a container base pointer.
+    ///
+    /// # Safety
+    ///
+    /// * `base` must be the start address of the object that currently contains `self`.
+    /// * The pointer must have been established with `set` and the relative positions must
+    ///   remain unchanged.
+    /// * No mutable reference to the target may exist for the lifetime of the returned reference.
     #[inline]
     pub unsafe fn get_ref_from_base_unchecked<'a>(&self, base: *const u8) -> &'a T {
-        let base_ptr = base as *const u8;
         let self_ptr = self as *const Self as *const u8;
-        let d_self = self_ptr.offset_from(base_ptr);
-        let at_self = base_ptr.wrapping_offset(d_self);
+        let d_self = self_ptr.offset_from(base);
+        let at_self = base.wrapping_offset(d_self);
         let p = nn_to_ptr(T::recompose(
             NonNull::new(self.0.add(at_self)),
             self.1.assume_init(),
@@ -239,9 +245,17 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     }
 
     /// Reconstructs a mutable reference using a container base pointer.
+    ///
+    /// # Safety
+    ///
+    /// * `base` must point to the start of the object that currently contains `self`.
+    /// * The pointer must have been initialised with `set` and the relative positions must
+    ///   remain unchanged.
+    /// * The caller must guarantee unique access to the target for the lifetime of the
+    ///   returned reference.
     #[inline]
     pub unsafe fn get_mut_from_base_unchecked<'a>(&self, base: *mut u8) -> &'a mut T {
-        let base_ptr = base as *const u8;
+        let base_ptr = base.cast_const();
         let self_ptr = self as *const Self as *const u8;
         let d_self = self_ptr.offset_from(base_ptr);
         let at_self = base_ptr.wrapping_offset(d_self);
