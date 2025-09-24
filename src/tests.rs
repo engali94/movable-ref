@@ -29,13 +29,17 @@ impl<T, U: ?Sized + PointerRecomposition> SelfRefTest<T, U> {
         &mut self.t
     }
 
-    pub fn t_ref(&self) -> &U {
-        unsafe { self.t_ref.as_ref_unchecked() }
+    pub fn t_ref(&mut self) -> &U {
+        unsafe {
+            self.t_ref
+                .get_ref_from_base_unchecked(self as *const _ as *const u8)
+        }
     }
 
     #[allow(unused)]
     pub fn t_ref_mut(&mut self) -> &mut U {
-        unsafe { self.t_ref.as_mut_unchecked() }
+        let base = self as *mut _ as *mut u8;
+        unsafe { self.t_ref.get_mut_from_base_unchecked(base) }
     }
 }
 
@@ -53,7 +57,6 @@ fn simple_test() {
 
     s.t_ref.set(&mut s.t).unwrap();
 
-    assert_eq!(s.t(), s.t_ref());
     assert_eq!(*s.t(), "Hello World");
     assert_eq!(*s.t_ref(), "Hello World");
 }
@@ -67,28 +70,24 @@ fn simple_move() {
 
     s.t_ref.set(&mut s.t).unwrap();
 
-    assert_eq!(s.t(), s.t_ref());
     assert_eq!(*s.t(), "Hello World");
     assert_eq!(*s.t_ref(), "Hello World");
 
-    let s = block_opt(s);
+    let mut s = block_opt(s);
 
-    assert_eq!(s.t(), s.t_ref());
     assert_eq!(*s.t(), "Hello World");
     assert_eq!(*s.t_ref(), "Hello World");
 }
 
 #[test]
 fn simple_move_after_init() {
-    let s = SelfRefTest::new("Hello World", id);
+    let mut s = SelfRefTest::new("Hello World", id);
 
-    assert_eq!(s.t(), s.t_ref());
     assert_eq!(*s.t(), "Hello World");
     assert_eq!(*s.t_ref(), "Hello World");
 
-    let s = block_opt(s);
+    let mut s = block_opt(s);
 
-    assert_eq!(s.t(), s.t_ref());
     assert_eq!(*s.t(), "Hello World");
     assert_eq!(*s.t_ref(), "Hello World");
 }
@@ -117,8 +116,6 @@ fn swap() {
 fn aliasing() {
     let mut s = SelfRefTest::new("Hello World", id);
 
-    assert_eq!(s.t(), s.t_ref());
-
     *s.t_mut() = "Killer Move";
 
     assert_eq!(*s.t(), "Killer Move");
@@ -129,11 +126,12 @@ fn aliasing() {
 fn sub_str() {
     #[inline(never)]
     fn get_move(s: SelfRefTest<[u8; 5], [u8]>) {
+        let mut s = s;
         assert_eq!(*s.t(), [0, 1, 2, 3, 4]);
         assert_eq!(*s.t_ref(), [2, 3, 4]);
     }
 
-    let s = SelfRefTest::new([0, 1, 2, 3, 4], |x| &mut x[2..]);
+    let mut s = SelfRefTest::new([0, 1, 2, 3, 4], |x| &mut x[2..]);
 
     assert_eq!(*s.t(), [0, 1, 2, 3, 4]);
     assert_eq!(*s.t_ref(), [2, 3, 4]);
@@ -162,7 +160,7 @@ mod nightly {
 
     #[test]
     fn check_trait_object_simple() {
-        let s = SelfRefTest::new(TestStruct { value: 42 }, |x| unsafe {
+        let mut s = SelfRefTest::new(TestStruct { value: 42 }, |x| unsafe {
             TraitObject::from_mut(x as &mut dyn std::fmt::Debug)
         });
 
@@ -177,7 +175,7 @@ mod nightly {
 
     #[test]
     fn check_trait_object_after_move() {
-        let s = SelfRefTest::new(TestStruct { value: 42 }, |x| unsafe {
+        let mut s = SelfRefTest::new(TestStruct { value: 42 }, |x| unsafe {
             TraitObject::from_mut(x as &mut dyn std::fmt::Debug)
         });
 
@@ -194,7 +192,7 @@ mod nightly {
             t
         }
 
-        let s = force_move(s);
+        let mut s = force_move(s);
 
         assert_eq!(s.t().value, 42);
 
@@ -208,7 +206,7 @@ mod nightly {
     #[test]
     #[cfg(feature = "std")]
     fn check_trait_object_after_move_heap() {
-        let s = SelfRefTest::new(TestStruct { value: 42 }, |x| unsafe {
+        let mut s = SelfRefTest::new(TestStruct { value: 42 }, |x| unsafe {
             TraitObject::from_mut(x as &mut dyn std::fmt::Debug)
         });
 
@@ -220,7 +218,7 @@ mod nightly {
             assert!(debug_str.contains("42"));
         }
 
-        let s = Box::new(s);
+        let mut s = Box::new(s);
 
         assert_eq!(s.t().value, 42);
 

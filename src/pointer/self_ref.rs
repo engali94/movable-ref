@@ -46,10 +46,11 @@ fn nn_to_ptr<T: ?Sized>(nn: Ptr<T>) -> *mut T {
 /// }
 ///
 /// // Works everywhere - stack, heap, vectors
-/// let node = Node::new("test".into());
-/// let boxed = Box::new(node);              // ✓ Moves to heap
-/// let mut vec = vec![*boxed];              // ✓ Moves again  
-/// let value = unsafe { vec[0].self_ref.as_ref_unchecked() };  // ✓ Still valid
+/// let mut node = Node::new("test".into());
+/// let boxed = Box::new(node);
+/// let mut vec = vec![*boxed];
+/// let base = &vec[0] as *const _ as *const u8;
+/// let value = unsafe { vec[0].self_ref.get_ref_from_base_unchecked(base) };
 /// ```
 ///
 /// # Safety Considerations
@@ -63,6 +64,7 @@ pub struct SelfRef<T: ?Sized + PointerRecomposition, I: Offset = isize>(
     I,
     MaybeUninit<T::Components>,
     PhantomData<*mut T>,
+    MaybeUninit<Ptr<T>>,
 );
 
 // Ergonomics and ptr like impls
@@ -84,7 +86,7 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> PartialEq for SelfRef<T, I> {
 /// Convert an offset into a `SelfRef`
 impl<T: ?Sized + PointerRecomposition, I: Offset> From<I> for SelfRef<T, I> {
     fn from(i: I) -> Self {
-        Self(i, MaybeUninit::uninit(), PhantomData)
+        Self(i, MaybeUninit::uninit(), PhantomData, MaybeUninit::uninit())
     }
 }
 
@@ -95,7 +97,12 @@ impl<T: ?Sized + PointerRecomposition, I: Nullable> SelfRef<T, I> {
     /// then use `set()` to point it at your target data.
     #[inline(always)]
     pub fn null() -> Self {
-        Self(I::NULL, MaybeUninit::uninit(), PhantomData)
+        Self(
+            I::NULL,
+            MaybeUninit::uninit(),
+            PhantomData,
+            MaybeUninit::uninit(),
+        )
     }
 
     /// Checks if the pointer is unset.
@@ -124,6 +131,10 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     pub fn set(&mut self, value: &mut T) -> Result<(), I::Error> {
         self.0 = I::sub(value as *mut T as _, self as *mut Self as _)?;
         self.1 = MaybeUninit::new(T::decompose(value));
+        #[cfg(miri)]
+        {
+            self.3 = MaybeUninit::new(Some(NonNull::from(value)));
+        }
 
         Ok(())
     }
@@ -141,6 +152,10 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     pub unsafe fn set_unchecked(&mut self, value: *mut T) {
         self.0 = I::sub_unchecked(value as _, self as *mut Self as _);
         self.1 = MaybeUninit::new(T::decompose(&*value));
+        #[cfg(miri)]
+        {
+            self.3 = MaybeUninit::new(NonNull::new(value).map(|p| p));
+        }
     }
 
     /// Reconstructs the target pointer without null checking.
@@ -150,9 +165,16 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     /// The pointer must have been successfully set and the relative positions
     /// of the pointer and target must not have changed since setting.
     #[inline]
-    unsafe fn as_raw_unchecked_impl(&self) -> *const T {
+    unsafe fn as_raw_unchecked_impl(&mut self) -> *mut T {
+        #[cfg(miri)]
+        {
+            let base = self as *mut Self as *const u8;
+            let addr = self.0.add(base).addr();
+            let exposed = addr as usize as *mut u8;
+            return nn_to_ptr(T::recompose(NonNull::new(exposed), self.1.assume_init()));
+        }
         nn_to_ptr(T::recompose(
-            NonNull::new(self.0.add(self as *const Self as *const u8)),
+            NonNull::new(self.0.add(self as *mut Self as *mut u8)),
             self.1.assume_init(),
         ))
     }
@@ -164,7 +186,7 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     /// Same as `as_raw_unchecked_impl`.
     #[inline]
     pub unsafe fn as_raw_unchecked(&mut self) -> *mut T {
-        self.as_raw_unchecked_impl() as _
+        self.as_raw_unchecked_impl()
     }
 
     /// Reconstructs the target as a `NonNull` pointer.
@@ -174,6 +196,15 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     /// Same as `as_raw_unchecked_impl`.
     #[inline]
     pub unsafe fn as_non_null_unchecked(&mut self) -> NonNull<T> {
+        #[cfg(miri)]
+        {
+            let base = self as *mut Self as *const u8;
+            let addr = self.0.add(base).addr();
+            let exposed = addr as usize as *mut u8;
+            return T::recompose(NonNull::new(exposed), self.1.assume_init()).unchecked_unwrap(
+                "Tried to use an unset relative pointer, this is UB in release mode!",
+            );
+        }
         T::recompose(
             NonNull::new(self.0.add(self as *mut Self as *mut u8)),
             self.1.assume_init(),
@@ -189,8 +220,50 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     ///
     /// Same as `as_raw_unchecked_impl`. Standard reference aliasing rules apply.
     #[inline]
-    pub unsafe fn as_ref_unchecked(&self) -> &T {
+    pub unsafe fn as_ref_unchecked(&mut self) -> &T {
         &*self.as_raw_unchecked_impl()
+    }
+
+    /// Reconstructs a shared reference using a container base pointer.
+    ///
+    /// # Safety
+    ///
+    /// * `base` must be the start address of the object that currently contains `self`.
+    /// * The pointer must have been established with `set` and the relative positions must
+    ///   remain unchanged.
+    /// * No mutable reference to the target may exist for the lifetime of the returned reference.
+    #[inline]
+    pub unsafe fn get_ref_from_base_unchecked<'a>(&self, base: *const u8) -> &'a T {
+        let self_ptr = self as *const Self as *const u8;
+        let d_self = self_ptr.offset_from(base);
+        let at_self = base.wrapping_offset(d_self);
+        let p = nn_to_ptr(T::recompose(
+            NonNull::new(self.0.add(at_self)),
+            self.1.assume_init(),
+        ));
+        &*p
+    }
+
+    /// Reconstructs a mutable reference using a container base pointer.
+    ///
+    /// # Safety
+    ///
+    /// * `base` must point to the start of the object that currently contains `self`.
+    /// * The pointer must have been initialised with `set` and the relative positions must
+    ///   remain unchanged.
+    /// * The caller must guarantee unique access to the target for the lifetime of the
+    ///   returned reference.
+    #[inline]
+    pub unsafe fn get_mut_from_base_unchecked<'a>(&self, base: *mut u8) -> &'a mut T {
+        let base_ptr = base.cast_const();
+        let self_ptr = self as *const Self as *const u8;
+        let d_self = self_ptr.offset_from(base_ptr);
+        let at_self = base_ptr.wrapping_offset(d_self);
+        let p = nn_to_ptr(T::recompose(
+            NonNull::new(self.0.add(at_self)),
+            self.1.assume_init(),
+        ));
+        &mut *p
     }
 
     /// Reconstructs the target as a mutable reference.
@@ -237,6 +310,13 @@ impl<T: ?Sized + PointerRecomposition, I: Nullable> SelfRef<T, I> {
     /// If the pointer was set, the relative positions must not have changed.
     #[inline]
     pub unsafe fn as_non_null(&mut self) -> Ptr<T> {
+        #[cfg(miri)]
+        {
+            let base = self as *mut Self as *const u8;
+            let addr = self.0.add(base).addr();
+            let exposed = addr as usize as *mut u8;
+            return T::recompose(NonNull::new(exposed), self.1.assume_init());
+        }
         as_non_null_impl!(self)
     }
 
@@ -247,7 +327,7 @@ impl<T: ?Sized + PointerRecomposition, I: Nullable> SelfRef<T, I> {
     /// Standard reference aliasing rules apply. If the pointer was set,
     /// the relative positions must not have changed.
     #[inline]
-    pub unsafe fn as_ref(&self) -> Option<&T> {
+    pub unsafe fn as_ref(&mut self) -> Option<&T> {
         Some(&*as_non_null_impl!(self)?.as_ptr())
     }
 

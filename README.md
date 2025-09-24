@@ -87,19 +87,22 @@ movable-ref = "0.1.0"
 ## Basic Usage
 
 ```rust
-use movable_ref::SelfRef;
+use movable_ref::{SelfRefCell, selfref_accessors};
 
-// 1. Create structure with null pointer
-let mut data = MyStruct {
-    value: "Hello".to_string(),
-    ptr: SelfRef::null(),
-};
+struct MyStruct {
+    value: SelfRefCell<String, i16>,
+}
 
-// 2. Set the relative pointer
-data.ptr.set(&mut data.value).unwrap();
+impl MyStruct {
+    fn new(s: String) -> Self {
+        Self { value: SelfRefCell::new(s).unwrap() }
+    }
+}
 
-// 3. Dereference the pointer
-let reference: &str = unsafe { data.ptr.as_ref_unchecked() };
+selfref_accessors!(impl MyStruct { value_ref, value_mut: value -> String });
+
+let mut data = MyStruct::new("Hello".to_string());
+let reference: &str = data.value_ref();
 ```
 
 ## Features
@@ -170,6 +173,17 @@ Pin<Box<T>>:      N/A    (cannot move!)
 - ✅ Safe when structure layout doesn't change after pointer setup
 - ✅ Safe for moving entire structures
 - ✅ Extensively tested with Miri
+
+## Miri checks
+
+```bash
+rustup toolchain install nightly
+rustup component add miri --toolchain nightly
+cargo +nightly miri setup
+cargo +nightly miri test
+cargo +nightly miri test --no-default-features
+cargo +nightly miri test --features nightly
+```
 
 ## Examples
 

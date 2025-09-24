@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(feature = "nightly", feature(ptr_metadata))]
+#![cfg_attr(feature = "nightly", feature(ptr_metadata, strict_provenance))]
 #![allow(clippy::needless_doctest_main)]
 #![forbid(missing_docs)]
 #![deny(unused_must_use)]
@@ -86,8 +86,9 @@ impl SelfRefStruct {
         this
     }
 
-    pub fn fst(&self) -> &str {
-        unsafe { self.ptr.as_ref_unchecked() }
+    pub fn fst(&mut self) -> &str {
+        let base = self as *const _ as *const u8;
+        unsafe { self.ptr.get_ref_from_base_unchecked(base) }
     }
 
     pub fn snd(&self) -> u32 {
@@ -95,12 +96,12 @@ impl SelfRefStruct {
     }
 }
 
-let s = SelfRefStruct::new("Hello World".into(), 10);
+let mut s = SelfRefStruct::new("Hello World".into(), 10);
 
 assert_eq!(s.fst(), "Hello World");
 assert_eq!(s.snd(), 10);
 
-let s = Box::new(s); // Force a move - relative pointers work on the heap
+let mut s = Box::new(s); // Force a move - relative pointers work on the heap
 
 assert_eq!(s.fst(), "Hello World");
 assert_eq!(s.snd(), 10);
@@ -133,10 +134,15 @@ extern crate core as std;
 mod tests;
 
 mod error;
+mod macros;
 mod metadata;
 mod offset;
 mod pointer;
+mod combinators {
+    pub mod self_ref_cell;
+}
 
+pub use self::combinators::self_ref_cell::SelfRefCell;
 pub use self::error::*;
 pub use self::metadata::*;
 pub use self::offset::*;

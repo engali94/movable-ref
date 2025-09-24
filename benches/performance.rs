@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use movable_ref::SelfRef;
+use movable_ref::{SelfRef, SelfRefCell};
 use std::cell::RefCell;
 use std::hint::black_box;
 use std::pin::Pin;
@@ -10,22 +10,23 @@ use std::rc::Rc;
 // ============================================================================
 
 struct SelfRefStruct {
-    data: [u64; 100],
-    ptr: SelfRef<u64, i16>,
+    cell: SelfRefCell<[u64; 100], i16>,
 }
 
 impl SelfRefStruct {
     fn new() -> Self {
-        let mut this = Self {
-            data: [42; 100],
-            ptr: SelfRef::null(),
-        };
-        this.ptr.set(&mut this.data[50]).unwrap();
-        this
+        let mut data = [0u64; 100];
+        data.iter_mut().enumerate().for_each(|(i, item)| {
+            *item = i as u64 * 2;
+        });
+
+        Self {
+            cell: SelfRefCell::new(data).unwrap(),
+        }
     }
 
-    fn get_value(&self) -> u64 {
-        unsafe { *self.ptr.as_ref_unchecked() }
+    fn get_value(&self) -> &u64 {
+        &self.cell.get()[50]
     }
 }
 
@@ -158,7 +159,7 @@ fn bench_move_semantics(c: &mut Criterion) {
         b.iter(|| {
             let s = SelfRefStruct::new();
             let moved = Box::new(s);
-            black_box(moved.get_value())
+            black_box(*moved.get_value())
         })
     });
 
