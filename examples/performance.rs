@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
 
-use movable_ref::{selfref_accessors, SelfRefCell};
+use movable_ref::{selfref_accessors, SelfRef, SelfRefCell};
 use std::hint::black_box;
 use std::time::Instant;
 

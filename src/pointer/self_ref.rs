@@ -64,7 +64,7 @@ pub struct SelfRef<T: ?Sized + PointerRecomposition, I: Offset = isize>(
     I,
     MaybeUninit<T::Components>,
     PhantomData<*mut T>,
-    #[cfg(miri)] MaybeUninit<Ptr<T>>,
+    MaybeUninit<Ptr<T>>,
 );
 
 // Ergonomics and ptr like impls
@@ -90,7 +90,6 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> From<I> for SelfRef<T, I> {
             i,
             MaybeUninit::uninit(),
             PhantomData,
-            #[cfg(miri)]
             MaybeUninit::uninit(),
         )
     }
@@ -107,7 +106,6 @@ impl<T: ?Sized + PointerRecomposition, I: Nullable> SelfRef<T, I> {
             I::NULL,
             MaybeUninit::uninit(),
             PhantomData,
-            #[cfg(miri)]
             MaybeUninit::uninit(),
         )
     }
