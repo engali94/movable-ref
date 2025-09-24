@@ -86,12 +86,7 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> PartialEq for SelfRef<T, I> {
 /// Convert an offset into a `SelfRef`
 impl<T: ?Sized + PointerRecomposition, I: Offset> From<I> for SelfRef<T, I> {
     fn from(i: I) -> Self {
-        Self(
-            i,
-            MaybeUninit::uninit(),
-            PhantomData,
-            MaybeUninit::uninit(),
-        )
+        Self(i, MaybeUninit::uninit(), PhantomData, MaybeUninit::uninit())
     }
 }
 
