@@ -129,8 +129,8 @@ and field offsets remain constant after initialization.
 ## Failure Modes
 
 * Calling unchecked APIs such as [`SelfRef::get_ref_from_base_unchecked`] before
-  initialisation is undefined behaviour; prefer [`SelfRef::try_as_ref`] or the
-  safe [`SelfRefCell::try_get`] wrappers to detect readiness.
+  initialisation is undefined behaviour; prefer the safe
+  [`SelfRefCell::try_get`] wrappers to detect readiness.
 * When the optional `debug-guards` feature is enabled, absolute pointers captured
   through [`SelfRef::from_parts_with_target`] or [`SelfRef::guard`] must only be
   used while the owning structure remains at a fixed address. Moving the container

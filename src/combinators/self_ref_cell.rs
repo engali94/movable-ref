@@ -40,7 +40,11 @@ impl<T: PointerRecomposition, I: Offset + Nullable> SelfRefCell<T, I> {
     /// * `Option<&T>` - Shared reference when the pointer is ready.
     #[inline]
     pub fn try_get(&self) -> Option<&T> {
-        self.ptr.try_as_ref()
+        if !self.ptr.is_ready() {
+            return None;
+        }
+        let base = self as *const _ as *const u8;
+        Some(unsafe { self.ptr.get_ref_from_base_unchecked(base) })
     }
 
     /// Mutable access to the value.
@@ -58,7 +62,11 @@ impl<T: PointerRecomposition, I: Offset + Nullable> SelfRefCell<T, I> {
     /// * `Option<&mut T>` - Exclusive reference when the pointer is ready.
     #[inline]
     pub fn try_get_mut(&mut self) -> Option<&mut T> {
-        self.ptr.try_as_mut()
+        if !self.ptr.is_ready() {
+            return None;
+        }
+        let base = self as *mut _ as *mut u8;
+        Some(unsafe { self.ptr.get_mut_from_base_unchecked(base) })
     }
 
     /// Consumes the cell and returns the value.

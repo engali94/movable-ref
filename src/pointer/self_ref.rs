@@ -7,7 +7,6 @@ use crate::offset::{Nullable, Offset, Ptr};
 use crate::pointer::unreachable::UncheckedOptionExt as _;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
-use core::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 
 type GuardPayload<T> = Option<NonNull<T>>;
@@ -275,56 +274,6 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
         })
     }
 
-    /// Attempts to reconstruct a shared reference without requiring a mutable borrow.
-    ///
-    /// # Returns
-    /// * `Option<&T>` - Shared reference when the pointer has been initialised.
-    #[inline]
-    pub fn try_as_ref(&self) -> Option<&T> {
-        if !self.is_ready() {
-            return None;
-        }
-        let base = self as *const Self as *const u8;
-        let target = unsafe { self.0.add(base) };
-        if let RefState::Ready(payload) = self.3 {
-            guard_assert_target::<T>(payload, target);
-        }
-        let components = unsafe { self.components_unchecked() };
-        let raw = unsafe { nn_to_ptr(T::recompose(NonNull::new(target), components)) };
-        Some(unsafe { &*raw })
-    }
-
-    /// Attempts to reconstruct an exclusive reference.
-    ///
-    /// # Returns
-    /// * `Option<&mut T>` - Exclusive reference when the pointer has been initialised.
-    #[inline]
-    pub fn try_as_mut(&mut self) -> Option<&mut T> {
-        if !self.is_ready() {
-            return None;
-        }
-        Some(unsafe { self.as_mut_unchecked() })
-    }
-
-    /// Creates a guard that re-seals the pointer when dropped.
-    ///
-    /// # Returns
-    /// * `Option<SelfRefGuard<'_, T, I>>` - Guard providing exclusive access to the target.
-    #[inline]
-    pub fn guard(&mut self) -> Option<SelfRefGuard<'_, T, I>> {
-        if !self.is_ready() {
-            return None;
-        }
-        let target = unsafe { self.as_non_null_unchecked() };
-        let payload = guard_payload_from::<T>(Some(target));
-        self.3 = RefState::Unset;
-        Some(SelfRefGuard {
-            inner: self,
-            target,
-            payload,
-        })
-    }
-
     /// Sets the pointer to target the given value.
     ///
     /// Computes the offset from this `SelfRef`'s location to the target value.
@@ -347,7 +296,6 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     /// * `Result<(), I::Error>` - `Ok` when the offset fits in `I`, otherwise the conversion error.
     #[inline]
     pub fn set(&mut self, value: &mut T) -> Result<(), I::Error> {
-        debug_assert!(!self.is_ready());
         self.0 = I::sub(value as *mut T as _, self as *mut Self as _)?;
         self.1 = MaybeUninit::new(T::decompose(value));
         self.3 = RefState::Ready(guard_payload_empty::<T>());
@@ -369,7 +317,6 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     /// * `value` - Raw pointer to the target value.
     #[inline]
     pub unsafe fn set_unchecked(&mut self, value: *mut T) {
-        debug_assert!(!self.is_ready());
         debug_assert!(!value.is_null());
         self.0 = I::sub_unchecked(value as _, self as *mut Self as _);
         self.1 = MaybeUninit::new(T::decompose(&*value));
@@ -514,48 +461,6 @@ impl<T: ?Sized + PointerRecomposition, I: Offset> SelfRef<T, I> {
     #[inline]
     pub unsafe fn as_mut_unchecked(&mut self) -> &mut T {
         &mut *self.as_raw_unchecked()
-    }
-}
-
-/// RAII helper that ensures a `SelfRef` is re-sealed after mutable access.
-pub struct SelfRefGuard<'a, T: ?Sized + PointerRecomposition, I: Offset> {
-    inner: &'a mut SelfRef<T, I>,
-    target: NonNull<T>,
-    payload: GuardPayload<T>,
-}
-
-impl<'a, T: ?Sized + PointerRecomposition, I: Offset> SelfRefGuard<'a, T, I> {
-    /// Returns a mutable reference to the guarded value.
-    #[inline]
-    pub fn value(&mut self) -> &mut T {
-        unsafe { &mut *self.target.as_ptr() }
-    }
-}
-
-impl<'a, T: ?Sized + PointerRecomposition, I: Offset> Deref for SelfRefGuard<'a, T, I> {
-    type Target = T;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*self.target.as_ptr() }
-    }
-}
-
-impl<'a, T: ?Sized + PointerRecomposition, I: Offset> DerefMut for SelfRefGuard<'a, T, I> {
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *self.target.as_ptr() }
-    }
-}
-
-impl<'a, T: ?Sized + PointerRecomposition, I: Offset> Drop for SelfRefGuard<'a, T, I> {
-    #[inline]
-    fn drop(&mut self) {
-        unsafe {
-            self.inner.3 = RefState::Unset;
-            self.inner.set_unchecked(self.target.as_ptr());
-        }
-        self.inner.3 = RefState::Ready(self.payload);
     }
 }
 

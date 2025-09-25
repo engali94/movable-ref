@@ -60,34 +60,9 @@ together.push(msg);          // moved to heap inside Vec
 assert_eq!(together[0].body(), "move me");
 ```
 
-Need more control? Use `SelfRef` directly:
-
-```rust
-use movable_ref::SelfRef;
-
-struct Node {
-    value: String,
-    ptr: SelfRef<String, i16>,
-}
-
-impl Node {
-    fn new(value: String) -> Self {
-        let mut node = Self { value, ptr: SelfRef::null() };
-        node.ptr.set(&mut node.value).expect("offset fits in i16");
-        node
-    }
-
-    fn value(&self) -> &str {
-        self.ptr.try_as_ref().expect("initialised" )
-    }
-}
-
-let mut node = Node::new("hello".into());
-let boxed = Box::new(node);
-let mut list = Vec::new();
-list.push(*boxed);            // node moves again
-assert_eq!(list[0].value(), "hello");
-```
+For advanced scenarios you can work with `SelfRef` directly, but doing so means
+reasoning about raw pointers. The recommended path is to use `SelfRefCell`
+inside your types and expose regular safe methods, as shown above.
 
 ## How it works
 
@@ -106,8 +81,6 @@ When the owner moves, the relative distance stays the same, so recomputing the p
 The crate provides layers to help you respect those rules:
 
 - `SelfRefCell` hides the unsafe parts and gives you safe `try_get`/`try_get_mut` accessors.
-- `SelfRef::try_as_ref` and `SelfRef::try_as_mut` return `Option` so you can handle uninitialised cases gracefully.
-- `SelfRef::guard` returns an RAII guard that re-seals the pointer when you finish mutating the target.
 - Enable the `debug-guards` feature during development to assert that recorded absolute pointers still match after moves.
 
 Failure modes are documented in the crate root (`src/lib.rs`). Use the safe helpers whenever possible; unchecked calls are intended for tightly controlled internals.

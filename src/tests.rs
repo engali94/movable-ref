@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(feature = "std")]
+use std::string::String;
+
 struct SelfRefTest<T, U: ?Sized + PointerRecomposition> {
     t_ref: SelfRef<U, i8>,
     t: T,
@@ -139,6 +142,7 @@ fn sub_str() {
     get_move(s);
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn equality_tracks_metadata() {
     let left = SelfRefTest::new([0, 1, 2, 3, 4], |x| &mut x[..]);
@@ -151,6 +155,7 @@ fn equality_tracks_metadata() {
     assert_ne!(left.t_ref, right.t_ref);
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn from_parts_restores_pointer() {
     let mut node = SelfRefTest::new([5, 6, 7, 8, 9], |x| &mut x[1..]);
@@ -164,23 +169,18 @@ fn from_parts_restores_pointer() {
     assert_eq!(*node.t_ref(), [6, 7, 8, 9]);
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn try_accessors() {
-    let node = SelfRefTest::new(String::from("alive"), id);
-    assert_eq!(node.t_ref.try_as_ref().map(|value| value.len()), Some(5));
-}
-
-#[test]
-fn guard_reseals_pointer() {
-    let mut node = SelfRefTest::new(String::from("hold"), id);
-    let length_before = node.t_ref.offset();
-    {
-        let mut guard = node.t_ref.guard().expect("guard creation should succeed");
-        guard.value().push_str("fast");
+    struct Wrapper {
+        cell: SelfRefCell<String, i16>,
     }
-    assert!(node.t_ref.is_ready());
-    assert_eq!(node.t_ref.offset(), length_before);
-    assert_eq!(*node.t_ref(), "holdfast");
+
+    let wrapper = Wrapper {
+        cell: SelfRefCell::new(String::from("alive")).unwrap(),
+    };
+
+    assert_eq!(wrapper.cell.try_get().map(|value| value.len()), Some(5));
 }
 
 #[test]

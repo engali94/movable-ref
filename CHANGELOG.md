@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Optional `debug-guards` feature flag that enables runtime assertions for
   relative pointer integrity without impacting release builds.
-- Safe accessor APIs (`try_as_ref`, `try_as_mut`) and the `SelfRefGuard` RAII type
-  to provide ergonomic, checked access to self-referential data.
+- Added `SelfRefCell::try_get` / `try_get_mut` for safe readiness checks without
+  invoking unchecked pointer reconstruction.
 - Documentation for Miri and AddressSanitizer workflows, including explicit
   failure modes and nightly command snippets.
 - `SelfRefCell::try_get` and `SelfRefCell::try_get_mut` so callers can detect
