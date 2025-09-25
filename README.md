@@ -3,200 +3,166 @@
 [![Crates.io](https://img.shields.io/crates/v/movable-ref.svg)](https://crates.io/crates/movable-ref)
 [![Documentation](https://docs.rs/movable-ref/badge.svg)](https://docs.rs/movable-ref)
 [![CI](https://github.com/engali94/movable-ref/workflows/CI/badge.svg)](https://github.com/engali94/movable-ref/actions)
-[![Ubuntu](https://img.shields.io/github/actions/workflow/status/engali94/movable-ref/ci.yml?branch=main&label=Ubuntu&logo=ubuntu)](https://github.com/engali94/movable-ref/actions)
-[![macOS](https://img.shields.io/github/actions/workflow/status/engali94/movable-ref/ci.yml?branch=main&label=macOS&logo=apple)](https://github.com/engali94/movable-ref/actions)
-[![Windows](https://img.shields.io/github/actions/workflow/status/engali94/movable-ref/ci.yml?branch=main&label=Windows&logo=windows)](https://github.com/engali94/movable-ref/actions)
 [![MSRV](https://img.shields.io/badge/MSRV-1.70+-blue.svg)](https://github.com/engali94/movable-ref/actions)
 
-A Rust library for **offset based pointers** that enable movable self-referential data structures.
+Movable self-referential data for Rust without pinning or runtime bookkeeping.
 
+## At a glance
 
-## The Problem
+- Store offsets instead of absolute pointers so your data can move freely across stack, heap, arenas, or embedded buffers.
+- Works in `no_std` projects and can be tuned to an 8-bit offset for tightly packed layouts.
+- Core API is explicit—helper macros are available but completely optional.
+- Optional `debug-guards` feature adds runtime assertions while you are iterating; release builds stay lean.
 
-Standard Rust cannot create self-referential structures that can be moved in memory:
+## When to reach for `SelfRef`
 
-```rust
-// This is impossible in safe Rust
-struct SelfRef<'a> {
-    data: String,
-    ptr: &'a str,  // Cannot reference self.data
-}
-```
+- You need a self-referential struct that must move (e.g., push onto a `Vec`, relocate across buffers, or compact in place).
+- You are targeting embedded or real-time systems where every byte matters and heap allocation is either expensive or unavailable.
+- You want predictable behaviour and explicit control instead of macro-generated code or hidden reference counting.
 
-Existing solutions have many limitations:
-- `Pin<Box<T>>`: Requires heap allocation, prevents movement.
-- `Rc<RefCell<T>>`: Runtime overhead, not `Send`/`Sync`
-- `ouroboros`: Complex macros, limited flexibility.
+## Quick start
 
-## The Solution
-
-Offset pointers store **offsets** instead of absolute addresses, enabling self-referential structures that remain valid when moved:
-
-```rust
-use movable_ref::SelfRef;
-
-struct Node {
-    value: String,
-    self_ref: SelfRef<String, i16>,  // 2-byte offset instead of 8-byte pointer
-}
-
-impl Node {
-    fn new(value: String) -> Self {
-        let mut node = Self {
-            value,
-            self_ref: SelfRef::null(),
-        };
-        node.self_ref.set(&mut node.value).unwrap();
-        node
-    }
-    
-    fn get_value(&self) -> &str {
-        unsafe { self.self_ref.as_ref_unchecked() }
-    }
-}
-
-// This works! The structure can be moved anywhere
-let node = Node::new("Hello".to_string());
-let boxed = Box::new(node);         // ✓ Moves to heap
-let mut vec = Vec::new();
-vec.push(*boxed);                   // ✓ Moves again
-println!("{}", vec[0].get_value()); // ✓ Still works!
-```
-
-## Why tether?
-
-Offset pointers solve a fundamental limitation in Rust: creating efficient, movable self-referential data structures. While other solutions exist, tether provides:
-
-1. **Embedded Systems Friendly**: Can run in very memory constrained devices. 
-2. **Movement freedom**: Structures work on stack, heap, or anywhere unlike `Pin`
-3. **True zero-cost abstraction**: Zero to Minimal runtime overhead
-4. **Memory efficiency**: 1-8 bytes vs 8+ bytes for alternatives  
-5. **Simplicity**: Straightforward API without complex macros
-
-Perfect for performance-critical applications, embedded systems, and anywhere you need self-referential structures that can move.
-
-## Installation
-
-Add to your `Cargo.toml`:
+Install the crate:
 
 ```toml
 [dependencies]
 movable-ref = "0.1.0"
 ```
 
-## Basic Usage
+Wrap a field in `SelfRefCell` to keep the unsafe details contained:
 
 ```rust
-use movable_ref::{SelfRefCell, selfref_accessors};
+use movable_ref::SelfRefCell;
 
-struct MyStruct {
-    value: SelfRefCell<String, i16>,
+struct Message {
+    body: SelfRefCell<String, i16>,
 }
 
-impl MyStruct {
-    fn new(s: String) -> Self {
-        Self { value: SelfRefCell::new(s).unwrap() }
+impl Message {
+    fn new(body: String) -> Self {
+        Self { body: SelfRefCell::new(body).expect("offset fits in i16") }
+    }
+
+    fn body(&self) -> &str {
+        self.body.get()
+    }
+
+    fn body_mut(&mut self) -> &mut String {
+        self.body.get_mut()
     }
 }
 
-selfref_accessors!(impl MyStruct { value_ref, value_mut: value -> String });
+let mut msg = Message::new("move me".into());
+assert_eq!(msg.body(), "move me");
 
-let mut data = MyStruct::new("Hello".to_string());
-let reference: &str = data.value_ref();
+let mut together = Vec::new();
+together.push(msg);          // moved to heap inside Vec
+assert_eq!(together[0].body(), "move me");
 ```
 
-## Features
+Need more control? Use `SelfRef` directly:
 
-- **`no_std`**: Works in embedded environments (disable default `std` feature)
-- **`nightly`**: Trait object support with nightly Rust
+```rust
+use movable_ref::SelfRef;
 
-```toml
-[dependencies]
-movable-ref = { version = "0.1.0", default-features = false }
-```
-## Performance Benchmarks
+struct Node {
+    value: String,
+    ptr: SelfRef<String, i16>,
+}
 
-Run `cargo bench` to see these results on your machine:
+impl Node {
+    fn new(value: String) -> Self {
+        let mut node = Self { value, ptr: SelfRef::null() };
+        node.ptr.set(&mut node.value).expect("offset fits in i16");
+        node
+    }
 
-### 🚀 **Access Speed** (lower = faster)
-```
-Direct Access:   329ps  (baseline)
-SelfRef:         331ps  ⭐ FASTEST
-Pin<Box<T>>:     365ps  (+10% slower)
-Rc<RefCell<T>>:  429ps  (+30% slower)
-```
+    fn value(&self) -> &str {
+        self.ptr.try_as_ref().expect("initialised" )
+    }
+}
 
-### 💾 **Memory Efficiency**
-```
-SelfRef<T, i8>:   1 byte  (±127 byte range)
-SelfRef<T, i16>:  2 bytes (±32KB range)  
-SelfRef<T, i32>:  4 bytes (±2GB range)
-*const T:         8 bytes (full address space)
-Rc<RefCell<T>>:   8 bytes + heap allocation
-```
-
-### ⚡ **Creation Speed**
-```
-Direct:           19ns   (baseline)
-SelfRef:          38ns   (+100% but still fastest)
-Rc<RefCell<T>>:   40ns   
-Pin<Box<T>>:      46ns   
+let mut node = Node::new("hello".into());
+let boxed = Box::new(node);
+let mut list = Vec::new();
+list.push(*boxed);            // node moves again
+assert_eq!(list[0].value(), "hello");
 ```
 
-### 🔄 **Move Semantics**
+## How it works
+
+Rust normally stores raw pointers. Absolute addresses break the moment a struct moves. `SelfRef<T, I>` stores only the signed offset (`I`) between the pointer and the value it targets plus the metadata needed to rebuild fat pointers (`[T]`, `str`, trait objects).
+
+When the owner moves, the relative distance stays the same, so recomputing the pointer after the move just works. Choose `I` to match the size of your container: `i8` covers ±127 bytes, `i16` covers ±32 KiB, `isize` covers most use cases.
+
+## Safety model
+
+`SelfRef` uses `unsafe` internally, so it is important to follow the invariants:
+
+1. Initialise immediately: call `SelfRef::set` right after constructing the struct. The pointer stays unset otherwise.
+2. Keep layout stable: do not reorder or remove the referenced field after initialisation.
+3. Move the whole struct together: individual fields must not be detached from the container.
+
+The crate provides layers to help you respect those rules:
+
+- `SelfRefCell` hides the unsafe parts and gives you safe `try_get`/`try_get_mut` accessors.
+- `SelfRef::try_as_ref` and `SelfRef::try_as_mut` return `Option` so you can handle uninitialised cases gracefully.
+- `SelfRef::guard` returns an RAII guard that re-seals the pointer when you finish mutating the target.
+- Enable the `debug-guards` feature during development to assert that recorded absolute pointers still match after moves.
+
+Failure modes are documented in the crate root (`src/lib.rs`). Use the safe helpers whenever possible; unchecked calls are intended for tightly controlled internals.
+
+## Benchmarks
+
+The Criterion benchmarks live in `benches/performance.rs`.
+
+| Operation | Direct | SelfRef | Pin<Box<T>> | Rc<RefCell<T>> |
+|-----------|--------|---------|-------------|----------------|
+| Access (ps) | 329 | **331** | 365 | 429 |
+| Create (ns) | 19 | 38 | 46 | 40 |
+| Move (ns) | 49 | **58** | N/A | 50 (clone) |
+
+Memory usage per pointer:
+
 ```
-Direct move:      49ns   
-Rc<RefCell<T>>:   50ns   (clone, not true move)
-SelfRef move:     58ns   ⭐ __TRUE MOVE SEMANTICS__
-Pin<Box<T>>:      N/A    (cannot move!)
+SelfRef<T, i8>   : 1 byte (±127 bytes)
+SelfRef<T, i16>  : 2 bytes (±32 KiB)
+SelfRef<T, i32>  : 4 bytes (±2 GiB)
+*const T         : 8 bytes
+Rc<RefCell<T>>   : 8 bytes + heap allocation
 ```
 
-**Key Takeaways:**
-- ✅ **Zero-cost abstraction**: SelfRef access is as fast as direct access
-- ✅ **Memory efficient**: 1-8 bytes vs 8+ bytes for alternatives
-- ✅ **True movability**: Unlike Pin<Box<T>>, SelfRef can actually move
-- ✅ **No runtime overhead**: No borrow checking like Rc<RefCell<T>>
+`cargo bench` will rebuild these tables for your target.
 
+## Tooling
 
-## Comparison with Alternatives
+| Task | Command |
+|------|---------|
+| Lint | `cargo clippy --all-targets -- -D warnings` |
+| Format | `cargo fmt` |
+| Tests | `cargo test` |
+| Miri | `cargo +nightly miri test` (see full matrix below) |
+| AddressSanitizer | `RUSTFLAGS="-Zsanitizer=address" ASAN_OPTIONS=detect_leaks=0 cargo +nightly test` |
 
-| Solution | Move Cost | Memory | Runtime Cost | Complexity |
-|----------|-----------|---------|--------------|------------|
-| `SelfRef` | **Zero** | **1-8 bytes** | **Zero** | Low |
-| `Pin<Box<T>>` | Impossible | 8+ bytes | Allocation | Medium |
-| `Rc<RefCell<T>>` | Cheap | 16+ bytes | Reference counting | High |
-| `ouroboros` | Zero | Varies | Zero | High |
-
-## Safety
-
-- ⚠️ Uses `unsafe` for pointer dereferencing
-- ✅ Safe when structure layout doesn't change after pointer setup
-- ✅ Safe for moving entire structures
-- ✅ Extensively tested with Miri
-
-## Miri checks
+Miri matrix:
 
 ```bash
-rustup toolchain install nightly
-rustup component add miri --toolchain nightly
 cargo +nightly miri setup
 cargo +nightly miri test
 cargo +nightly miri test --no-default-features
 cargo +nightly miri test --features nightly
+cargo +nightly miri test --features debug-guards
 ```
 
-## Examples
+## Comparison
 
-Run the examples to see tether in action:
-
-```bash
-# Basic usage
-cargo run --example basic_usage
-
-# Performance benchmarks
-cargo run --example performance
-```
+| Approach | Moves? | Memory | Runtime cost | Notes |
+|----------|--------|--------|--------------|-------|
+| `SelfRef` | ✅ | 1–8 bytes | None | Works in `no_std`, flexible integer offsets |
+| `Pin<Box<T>>` | ❌ | 8+ bytes | Allocation | Stable but data cannot move |
+| `Rc<RefCell<T>>` | ➖ (clone) | 16+ bytes | Borrow checking + refcount | Allows interior mutability |
+| `ouroboros` | ✅ | varies | None | Macro DSL, less manual control |
 
 ## License
 
-Licensed under [MIT license](LICENSE-MIT).
+MIT licensed. See `LICENSE-MIT` for details.
