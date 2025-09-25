@@ -140,6 +140,50 @@ fn sub_str() {
 }
 
 #[test]
+fn equality_tracks_metadata() {
+    let left = SelfRefTest::new([0, 1, 2, 3, 4], |x| &mut x[..]);
+    let right = SelfRefTest::new([0, 1, 2, 3, 4], |x| &mut x[1..]);
+
+    assert_eq!(
+        left.t_ref,
+        SelfRefTest::new([9, 8, 7, 6, 5], |x| &mut x[..]).t_ref
+    );
+    assert_ne!(left.t_ref, right.t_ref);
+}
+
+#[test]
+fn from_parts_restores_pointer() {
+    let mut node = SelfRefTest::new([5, 6, 7, 8, 9], |x| &mut x[1..]);
+    let (stored_offset, stored_components) = node
+        .t_ref
+        .parts_if_ready()
+        .expect("pointer should be ready");
+    node.t_ref = SelfRef::from_parts(stored_offset, stored_components);
+
+    assert!(node.t_ref.is_ready());
+    assert_eq!(*node.t_ref(), [6, 7, 8, 9]);
+}
+
+#[test]
+fn try_accessors() {
+    let node = SelfRefTest::new(String::from("alive"), id);
+    assert_eq!(node.t_ref.try_as_ref().map(|value| value.len()), Some(5));
+}
+
+#[test]
+fn guard_reseals_pointer() {
+    let mut node = SelfRefTest::new(String::from("hold"), id);
+    let length_before = node.t_ref.offset();
+    {
+        let mut guard = node.t_ref.guard().expect("guard creation should succeed");
+        guard.value().push_str("fast");
+    }
+    assert!(node.t_ref.is_ready());
+    assert_eq!(node.t_ref.offset(), length_before);
+    assert_eq!(*node.t_ref(), "holdfast");
+}
+
+#[test]
 fn check_copy() {
     fn is_copy<T: Copy>() {}
 
