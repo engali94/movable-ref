@@ -37,7 +37,10 @@ jobs:
       - name: Install Rust (stable)
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: cargo
+          components: cargo,clippy
+
+      - name: Install cargo-edit
+        run: cargo install cargo-edit --locked
 
       - name: Verify working tree is clean
         run: |
@@ -47,14 +50,8 @@ jobs:
             exit 1
           fi
 
-      - name: Validate version input
-        run: |
-          expected="${{ inputs.version }}"
-          actual=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-          if [ "$expected" != "$actual" ]; then
-            echo "Input version $expected does not match Cargo.toml version $actual" >&2
-            exit 1
-          fi
+      - name: Update crate version
+        run: cargo set-version ${{ inputs.version }}
 
       - name: Tests
         run: |
@@ -71,6 +68,16 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: cargo publish
+
+      - name: Commit version bump
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git add Cargo.toml Cargo.lock
+          git commit -m "Release ${{ inputs.version }}"
+
+      - name: Push changes
+        if: ${{ !inputs.dry_run }}
+        run: git push origin HEAD:main
 
       - name: Create tag
         if: ${{ !inputs.dry_run }}
