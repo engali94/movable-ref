@@ -125,6 +125,16 @@ pointers maintain their offset relationship regardless of absolute position.
 **Access Safety**: `SelfRef::as_ref_unchecked()` is safe when the pointer cannot
 be invalidated - which occurs when direct pointer modification is impossible
 and field offsets remain constant after initialization.
+
+## Failure Modes
+
+* Calling unchecked APIs such as [`SelfRef::get_ref_from_base_unchecked`] before
+  initialisation is undefined behaviour; prefer the safe
+  [`SelfRefCell::try_get`] wrappers to detect readiness.
+* When the optional `debug-guards` feature is enabled, absolute pointers captured
+  through [`SelfRef::from_parts_with_target`] or [`SelfRef::guard`] must only be
+  used while the owning structure remains at a fixed address. Moving the container
+  without refreshing these guards will trigger debug assertions.
 */
 
 #[cfg(not(feature = "std"))]
