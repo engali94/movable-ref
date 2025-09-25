@@ -1,6 +1,6 @@
 [package]
 name = "movable-ref"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Ali A. Hilal"]
 repository = "https://github.com/engali94/movable-ref"
 description = "A tool for building movable self-referential types"
