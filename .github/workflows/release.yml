@@ -96,4 +96,5 @@ jobs:
         with:
           tag_name: v${{ inputs.version }}
           name: v${{ inputs.version }}
-          body_path: RELEASE_NOTES.md
+          body: |-
+            Release v${{ inputs.version }}
