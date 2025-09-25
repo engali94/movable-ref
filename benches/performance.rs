@@ -4,11 +4,6 @@ use std::cell::RefCell;
 use std::hint::black_box;
 use std::pin::Pin;
 use std::rc::Rc;
-
-// ============================================================================
-// Test Data Structures (Small, Fast)
-// ============================================================================
-
 struct SelfRefStruct {
     cell: SelfRefCell<[u64; 100], i16>,
 }
@@ -29,7 +24,6 @@ impl SelfRefStruct {
         &self.cell.get()[50]
     }
 }
-
 struct PinnedStruct {
     #[allow(dead_code)]
     data: [u64; 100],
@@ -47,7 +41,6 @@ impl PinnedStruct {
         unsafe { *self.ptr }
     }
 }
-
 #[derive(Clone)]
 struct RcRefCellStruct {
     _data: [u64; 100],
@@ -66,7 +59,6 @@ impl RcRefCellStruct {
         *self.ptr.borrow()
     }
 }
-
 struct DirectStruct {
     data: [u64; 100],
     index: usize,
@@ -84,8 +76,6 @@ impl DirectStruct {
         self.data[self.index]
     }
 }
-
-// ============================================================================
 
 fn bench_memory_footprint(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_footprint");
@@ -109,7 +99,6 @@ fn bench_memory_footprint(c: &mut Criterion) {
 
     group.finish();
 }
-
 fn bench_access_speed(c: &mut Criterion) {
     let mut group = c.benchmark_group("access_speed");
     group.sample_size(50);
@@ -133,7 +122,6 @@ fn bench_access_speed(c: &mut Criterion) {
 
     group.finish();
 }
-
 fn bench_creation_speed(c: &mut Criterion) {
     let mut group = c.benchmark_group("creation_speed");
     group.sample_size(30);
@@ -150,7 +138,6 @@ fn bench_creation_speed(c: &mut Criterion) {
 
     group.finish();
 }
-
 fn bench_move_semantics(c: &mut Criterion) {
     let mut group = c.benchmark_group("move_semantics");
     group.sample_size(30);
